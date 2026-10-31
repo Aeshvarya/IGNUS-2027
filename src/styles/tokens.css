@@ -1,0 +1,63 @@
+/*
+  Design tokens, taken as-is from the handoff (design/handoff/ignus-isekai-shift.html).
+  Two realms share one dark world:
+    - Ordinary / threshold: carved serif, warm stone, copper, portal cyan.
+    - The Shift: sticker-bombed neon on ink.
+  body.is-shift flips the semantic tokens (--fg, --fg-dim, --scrim, --line).
+*/
+:root {
+  /* palette */
+  --void: #0b0806;          /* dusk-black */
+  --dusk-deep: #3a2414;
+  --lichen: #f1e6d2;        /* warm stone, the ordinary realm's ink */
+  --lichen-dim: #c4ae93;
+  --copper: #e09356;
+  --portal: #5ef2ff;        /* portal cyan */
+  --rani: #ff2e93;          /* rani pink */
+  --acid: #dcff3c;
+  --saffron: #ff8a1f;
+  --jodhpur: #86a0ff;       /* blue-city blue, lifted for dark ground */
+  --ink: #0d0618;           /* the Shift's ink */
+  --paper: #fff4e2;         /* sticker paper */
+  --lilac: #cbbcff;
+
+  /* translucent layers */
+  --scrim: rgba(10, 6, 3, .72);
+  --scrim-shift: rgba(13, 6, 24, .78);
+  --ink-a: rgba(13, 6, 24, .9);
+  --line: rgba(241, 230, 210, .22);
+  --line-shift: rgba(255, 244, 226, .22);
+  --dot: rgba(255, 46, 147, .32);
+  --portal-glow: rgba(94, 242, 255, .28);
+  --portal-a: rgba(94, 242, 255, .22);
+  --shadow: rgba(0, 0, 0, .65);
+
+  /* semantic */
+  --fg: var(--lichen);
+  --fg-dim: var(--lichen-dim);
+  --accent: var(--rani);      /* becomes the chosen avatar's colour */
+
+  /* type families */
+  --f-carved: "Tiro Devanagari Hindi", "Noto Serif Devanagari", Georgia, "Times New Roman", serif;
+  --f-hud: "Martian Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --f-pop: "Dela Gothic One", "Arial Black", Impact, system-ui, sans-serif;
+  --f-paint: "Rubik Wet Paint", "Dela Gothic One", Impact, sans-serif;
+
+  /* fluid type scale */
+  --t-xs: clamp(.68rem, .64rem + .15vw, .76rem);
+  --t-s: clamp(.86rem, .82rem + .2vw, .95rem);
+  --t-m: clamp(1.02rem, .96rem + .3vw, 1.18rem);
+  --t-l: clamp(1.4rem, 1.1rem + 1.2vw, 2rem);
+  --t-lx: clamp(1.8rem, 1.3rem + 2vw, 2.7rem);
+  --t-xl: clamp(2.2rem, 1.3rem + 3.6vw, 4.4rem);
+  --t-xxl: clamp(3.6rem, 1.6rem + 9vw, 9rem);
+
+  color-scheme: dark;
+}
+
+body.is-shift {
+  --fg: var(--paper);
+  --fg-dim: var(--lilac);
+  --scrim: var(--scrim-shift);
+  --line: var(--line-shift);
+}

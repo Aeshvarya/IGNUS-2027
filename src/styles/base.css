@@ -1,0 +1,20 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--void); }
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--fg);
+  font-family: var(--f-carved);
+  font-size: var(--t-m);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+img, svg, canvas { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
