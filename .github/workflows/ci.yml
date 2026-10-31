@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, budget and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ASTRO_TELEMETRY_DISABLED: '1'
+      SITE_URL: https://example.org
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build (also validates every content file)
+        run: npm run build
+      - name: Performance budget
+        run: npm run budget
+      - name: Install Chromium for the smoke test
+        run: |
+          npm i --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Smoke + accessibility test (every page, desktop and phone)
+        run: |
+          npx astro preview --port 4321 &
+          npx --yes wait-on@8 http://localhost:4321 --timeout 60000
+          npm run smoke

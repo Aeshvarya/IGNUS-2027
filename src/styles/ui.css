@@ -11,7 +11,7 @@ body.is-shift .h2 { font-family: var(--f-pop); text-transform: uppercase; letter
   align-self: flex-start; display: inline-block; margin: 0; font-family: var(--f-pop); font-size: var(--t-xs); letter-spacing: .06em; text-transform: uppercase; line-height: 1.2;
   padding: .45em .8em; color: var(--ink); background: var(--acid); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: rotate(-3deg);
 }
-.s-rani { background: var(--rani); color: var(--paper); }
+.s-rani { background: var(--rani); color: var(--ink); } /* ink, not paper: paper on rani is only ~3.2:1 */
 .s-cyan { background: var(--portal); }
 .s-saffron { background: var(--saffron); }
 .s-paper { background: var(--paper); }
