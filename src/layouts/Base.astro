@@ -1,0 +1,85 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '@fontsource/tiro-devanagari-hindi/latin-400.css';
+import '@fontsource/tiro-devanagari-hindi/latin-400-italic.css';
+import '@fontsource/tiro-devanagari-hindi/devanagari-400.css';
+import '@fontsource/dela-gothic-one/latin-400.css';
+import '@fontsource/rubik-wet-paint/latin-400.css';
+import '@fontsource/martian-mono/latin-400.css';
+import '@fontsource/martian-mono/latin-700.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/hud.css';
+import '../styles/ui.css';
+import Hud from '../components/Hud.astro';
+import { SITE } from '../config/site';
+
+interface Props {
+  /** Page title; the site name is appended. */
+  title?: string;
+  description?: string;
+  /** Page key: drives the world's camera location and the runtime's page controller. */
+  page: 'home' | 'events' | 'event' | 'schedule' | 'pronites' | 'passes' | 'sponsors' | 'team' | 'faq' | '404';
+  /** Which realm the page starts in. Home starts ordinary; everything else lives in the Shift. */
+  realm?: 'ordinary' | 'shift';
+  ogImage?: string;
+}
+
+const { title, description = SITE.description, page, realm = 'shift', ogImage = '/og/default.png' } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} · ${SITE.theme}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const og = new URL(ogImage, Astro.site);
+---
+<!doctype html>
+<html lang="en" data-page={page}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{fullTitle}</title>
+  <meta name="description" content={description}>
+  <link rel="canonical" href={canonical}>
+  <meta name="theme-color" content="#0b0806">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="sitemap" href="/sitemap-index.xml">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content={SITE.name}>
+  <meta property="og:title" content={fullTitle}>
+  <meta property="og:description" content={description}>
+  <meta property="og:url" content={canonical}>
+  <meta property="og:image" content={og}>
+  <meta name="twitter:card" content="summary_large_image">
+  <slot name="head" />
+  <script is:inline>
+    // Before first paint: restore the player's colour and Lite mode so nothing flashes.
+    (function () {
+      var d = document.documentElement, AV = { performer: '#ff2e93', artist: '#ff8a1f', competitor: '#dcff3c', strategist: '#6f8cff', spellcaster: '#5ef2ff' };
+      try {
+        var k = localStorage.getItem('ignus27-avatar'); if (k && AV[k]) d.style.setProperty('--accent', AV[k]);
+        if (localStorage.getItem('ignus27-lite') === '1') d.classList.add('lite');
+      } catch (e) {}
+    })();
+  </script>
+  <ClientRouter />
+</head>
+<body class:list={[realm === 'shift' && 'is-shift']} data-page={page} data-realm={realm}>
+  <a class="skip" href="#content">Skip to content</a>
+  <canvas id="world" aria-hidden="true" transition:persist="world"></canvas>
+  <div class="world-fallback" aria-hidden="true" transition:persist="world-fallback"></div>
+  <div id="loader" role="status" transition:persist="loader">
+    <span class="loader-ring" aria-hidden="true"></span><span id="loaderText">Opening the rift</span>
+  </div>
+
+  <Hud />
+
+  <main id="content" tabindex="-1">
+    <slot />
+  </main>
+  <slot name="after" />
+
+  <script>
+    import { boot } from '../runtime/app.js';
+    boot();
+  </script>
+</body>
+</html>

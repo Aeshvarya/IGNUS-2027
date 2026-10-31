@@ -1,0 +1,12 @@
+[
+  { "id": "title", "name": "Your Brand Here", "tier": "title", "role": "Title sponsor", "url": null, "logo": null },
+  { "id": "plat-1", "name": "Platinum Partner", "tier": "platinum", "role": "Powered by", "url": null, "logo": null },
+  { "id": "plat-2", "name": "Platinum Partner", "tier": "platinum", "role": "Co-powered by", "url": null, "logo": null },
+  { "id": "gold-1", "name": "Gold Partner", "tier": "gold", "role": "Music partner", "url": null, "logo": null },
+  { "id": "gold-2", "name": "Gold Partner", "tier": "gold", "role": "Gaming partner", "url": null, "logo": null },
+  { "id": "gold-3", "name": "Gold Partner", "tier": "gold", "role": "Fashion partner", "url": null, "logo": null },
+  { "id": "p-1", "name": "Partner", "tier": "partner", "role": "Media partner", "url": null, "logo": null },
+  { "id": "p-2", "name": "Partner", "tier": "partner", "role": "Food partner", "url": null, "logo": null },
+  { "id": "p-3", "name": "Partner", "tier": "partner", "role": "Merch partner", "url": null, "logo": null },
+  { "id": "p-4", "name": "Partner", "tier": "partner", "role": "Travel partner", "url": null, "logo": null }
+]

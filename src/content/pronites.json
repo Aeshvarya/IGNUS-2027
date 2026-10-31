@@ -1,0 +1,6 @@
+[
+  { "id": "night-1", "night": 1, "title": "Opening Night", "artist": null, "genre": "Indie / Rock", "start": "20:00", "venue": "Main Stage", "teaser": "The circle opens. A band you have sung along to at 2am." },
+  { "id": "night-2", "night": 2, "title": "EDM Night", "artist": null, "genre": "Electronic", "start": "21:00", "venue": "Main Stage", "teaser": "Lasers, bass, and a drop that rattles the berm." },
+  { "id": "night-3", "night": 3, "title": "Bollywood Night", "artist": null, "genre": "Bollywood", "start": "20:30", "venue": "Main Stage", "teaser": "Ten thousand voices, one chorus." },
+  { "id": "night-4", "night": 4, "title": "Final Boss", "artist": null, "genre": "Headliner", "start": "21:00", "venue": "Main Stage", "teaser": "The last encounter. Revealed last." }
+]

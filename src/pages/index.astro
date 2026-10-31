@@ -1,0 +1,110 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, AVATARS, AVATAR_KEYS } from '../config/site';
+import { registerHref } from '../lib/api';
+import '../styles/home.css';
+
+const reg = registerHref();
+const QUESTS = [
+  { q: -1, title: 'Cross the berm', text: 'The main quest. Step inside the magic circle. Everything after is the story.', tag: 'Main', href: null },
+  { q: 0, title: 'Boss encounters', text: 'Headline events. Big crowds, big stages, one shot at it.', tag: 'Events', href: '/events/?category=boss' },
+  { q: 1, title: 'Side quests', text: 'Competitions across music, dance, art, quizzing and more. Pick them up anywhere on the map.', tag: 'Competitions', href: '/events/?category=side' },
+  { q: 2, title: 'Level arenas', text: 'Courtyards, lecture halls and plazas, rebuilt as arenas for four days.', tag: 'Venues', href: '/schedule/' },
+  { q: 3, title: 'Rare discoveries', text: 'Installations placed around campus. Find them all to finish the map.', tag: 'Installations', href: '/events/?category=discovery' },
+  { q: -1, title: 'The storyline', text: 'The walk between venues, painted, lit and full of encounters.', tag: 'The walk', href: '/schedule/' },
+];
+---
+<Base page="home" realm="ordinary">
+  <link slot="head" rel="preload" as="image" href="/logos/wordmark-date.svg" type="image/svg+xml" fetchpriority="high">
+
+  <section class="hero" id="hero">
+    <h1 class="wordmark"><img src="/logos/wordmark-date.svg" alt="IGNUS 2027" width="1721" height="677" fetchpriority="high"></h1>
+    <p class="subline"><span class="isekai">{SITE.theme}</span><span class="hi" lang="hi">{SITE.themeHi}</span></p>
+    <p class="eyebrow">{SITE.college} · Annual fest</p>
+    <a class="cue" href="#theme"><span>Scroll to cross the berm</span><i aria-hidden="true"></i></a>
+  </section>
+
+  <section class="theme" id="theme">
+    <div class="panel scrim">
+      <p class="kicker">Prologue</p>
+      <h2 class="h2">For four days, academic gravity switches off.</h2>
+      <p class="lede">IGNUS turns the IIT Jodhpur campus into a magic circle. Its outer berms become the threshold. Step across and the walk to a venue becomes a quest. A courtyard becomes an arena. A lecture hall becomes a stage.</p>
+      <p class="lede">The buildings stay where they are. What changes is the reality inside them.</p>
+      <p class="def"><b>magic circle (n.)</b><span>In game design, the boundary that sets a space and a time apart from everyday life. Inside it, a new set of rules applies.</span></p>
+    </div>
+  </section>
+
+  <section class="rift" id="rift" aria-label="The crossing">
+    <div class="rift-sticky">
+      <div class="rift-before only-threshold">
+        <p class="hud-line">Approaching the rift · <span id="riftSync">0%</span></p>
+        <blockquote class="coleridge">
+          <p>“That willing suspension of disbelief for the moment, which constitutes poetic faith.”</p>
+          <cite>S. T. Coleridge · Biographia Literaria · 1817</cite>
+        </blockquote>
+        <p class="hud-line">Keep scrolling to cross</p>
+      </div>
+      <div class="rift-after only-shift">
+        <p class="sticker">Gravity: off</p>
+        <h2 class="shift-logo"><img src="/logos/wordmark-title.svg" alt="IGNUS: Isekai Shift" width="1558" height="768" loading="lazy"></h2>
+        <p class="hud-line">Reality deactivated · Welcome, player</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="avatars" id="avatars">
+    <div class="card">
+      <p class="sticker s-rani">Character select</p>
+      <h2 class="h2">Choose your avatar</h2>
+      <p class="lede">For four days you are not a roll number. Pick who you play, and the circle takes your colour.</p>
+      <fieldset class="avatar-list">
+        <legend class="sr-only">Avatar</legend>
+        {AVATAR_KEYS.map((key) => {
+          const a = AVATARS[key];
+          return (
+            <label class="avatar" style={`--c:var(${a.token})`}>
+              <input type="radio" name="avatar" id={`av-${key}`} value={key}>
+              <span class="av-swatch" aria-hidden="true"></span>
+              <span class="av-text"><span class="av-name">{a.name}</span><span class="av-line">{a.line}</span><span class="av-where">{a.where}</span></span>
+            </label>
+          );
+        })}
+      </fieldset>
+    </div>
+  </section>
+
+  <section class="quests" id="quests">
+    <div class="card">
+      <p class="sticker s-cyan">Quest log</p>
+      <h2 class="h2">Ignus, read as a game</h2>
+      <ul class="quest-list">
+        {QUESTS.map((q) => (
+          <li class="quest" data-q={q.q}>
+            <span class="q-mark" aria-hidden="true"></span>
+            <div><h3>{q.href ? <a href={q.href}>{q.title}</a> : q.title}</h3><p>{q.text}</p></div>
+            <span class="q-tag">{q.tag}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="register" id="register">
+    <div class="register-inner">
+      <p class="sticker s-saffron">Final level</p>
+      <h2 class="h2">Enter the magic circle</h2>
+      <p class="lede">Four days. One campus. A new set of rules.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href={reg ?? '/passes/'} data-register>Register</a>
+        <button class="btn btn-ghost" id="backBtn" type="button">Back through the berm ↑</button>
+      </div>
+    </div>
+    <footer class="foot"><span>IGNUS ’27 · IIT Jodhpur</span><span>{SITE.theme}</span><span lang="hi">{SITE.themeHi}</span></footer>
+  </section>
+
+  <aside slot="after" class="hud-realm" aria-hidden="true">
+    <div class="hr-row"><span id="hudRealm">Realm · Ordinary</span><span>U</span></div>
+    <div class="hr-bar"><i id="hudBar"></i><b class="hr-tick"></b></div>
+    <div class="hr-row"><span id="hudLine">Rift 32.2 m</span></div>
+  </aside>
+</Base>

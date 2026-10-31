@@ -1,0 +1,10 @@
+[
+  { "id": "fest-head", "name": "Name Surname", "role": "Fest Coordinator", "vertical": "Core", "photo": null, "email": null, "order": 1 },
+  { "id": "co-head", "name": "Name Surname", "role": "Co-coordinator", "vertical": "Core", "photo": null, "email": null, "order": 2 },
+  { "id": "events-head", "name": "Name Surname", "role": "Head", "vertical": "Events", "photo": null, "email": null, "order": 10 },
+  { "id": "pr-head", "name": "Name Surname", "role": "Head", "vertical": "Public Relations", "photo": null, "email": null, "order": 11 },
+  { "id": "design-head", "name": "Name Surname", "role": "Head", "vertical": "Design", "photo": null, "email": null, "order": 12 },
+  { "id": "web-head", "name": "Name Surname", "role": "Head", "vertical": "Web & Tech", "photo": null, "email": null, "order": 13 },
+  { "id": "spons-head", "name": "Name Surname", "role": "Head", "vertical": "Sponsorship", "photo": null, "email": null, "order": 14 },
+  { "id": "hosp-head", "name": "Name Surname", "role": "Head", "vertical": "Hospitality", "photo": null, "email": null, "order": 15 }
+]

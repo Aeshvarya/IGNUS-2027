@@ -1,0 +1,49 @@
+/* Shared UI pieces from the handoff: kicker, headings, stickers, cards, buttons. */
+.kicker { margin: 0; font-family: var(--f-hud); font-size: var(--t-xs); letter-spacing: .24em; text-transform: uppercase; color: var(--copper); }
+.is-shift .kicker { color: var(--lilac); }
+.h2 { margin: 0; font-family: var(--f-carved); font-weight: 400; font-size: var(--t-xl); line-height: 1.04; text-wrap: balance; color: var(--fg); }
+body.is-shift .h2 { font-family: var(--f-pop); text-transform: uppercase; letter-spacing: 0; line-height: 1.02; color: var(--paper); text-shadow: 3px 3px 0 var(--accent); }
+.lede { margin: 0; max-width: 60ch; color: var(--fg); }
+.eyebrow { margin: .2rem 0 0; font-family: var(--f-hud); font-size: var(--t-xs); letter-spacing: .24em; text-transform: uppercase; color: var(--fg-dim); }
+.hud-line { margin: 0; font-family: var(--f-hud); font-size: var(--t-xs); letter-spacing: .24em; text-transform: uppercase; color: var(--portal); font-variant-numeric: tabular-nums; }
+
+.sticker {
+  align-self: flex-start; display: inline-block; margin: 0; font-family: var(--f-pop); font-size: var(--t-xs); letter-spacing: .06em; text-transform: uppercase; line-height: 1.2;
+  padding: .45em .8em; color: var(--ink); background: var(--acid); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transform: rotate(-3deg);
+}
+.s-rani { background: var(--rani); color: var(--paper); }
+.s-cyan { background: var(--portal); }
+.s-saffron { background: var(--saffron); }
+.s-paper { background: var(--paper); }
+.s-blue { background: var(--jodhpur); }
+
+.card {
+  position: relative; width: min(100%, 31rem); display: flex; flex-direction: column; gap: 1rem; padding: 1.6rem; background: var(--ink-a);
+  border: 3px solid var(--paper); border-radius: 6px; box-shadow: 8px 8px 0 var(--accent);
+}
+.card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background-image: radial-gradient(var(--dot) 1.1px, transparent 1.7px); background-size: 9px 9px;
+  -webkit-mask-image: linear-gradient(135deg, black, transparent 50%); mask-image: linear-gradient(135deg, black, transparent 50%);
+}
+.card .h2 { font-size: var(--t-lx); }
+.card .lede { font-size: var(--t-s); color: var(--paper); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: .8em 1.5em; font-family: var(--f-pop); font-size: var(--t-s); text-transform: uppercase; letter-spacing: .04em;
+  text-decoration: none; border: 3px solid var(--ink); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease;
+}
+.btn-primary { background: var(--acid); color: var(--ink); box-shadow: 5px 5px 0 var(--accent); }
+.btn-primary:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--accent); }
+.btn-primary:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--accent); }
+.btn-ghost { background: var(--ink-a); color: var(--paper); border-color: var(--paper); }
+.btn-ghost:hover { transform: translate(-2px, -2px); }
+.btn[aria-disabled="true"] { opacity: .7; cursor: not-allowed; }
+
+.foot { display: flex; flex-wrap: wrap; gap: .6rem 1.6rem; justify-content: center; font-family: var(--f-hud); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--fg-dim); }
+.foot [lang="hi"] { font-family: var(--f-carved); letter-spacing: 0; text-transform: none; font-size: var(--t-s); }
+.foot a { text-decoration: none; }
+.foot a:hover { color: var(--fg); }
+
+@keyframes jolt { 0% { transform: none } 15% { transform: translate(-8px, 3px) skewX(-8deg) } 30% { transform: translate(7px, -4px) skewX(6deg) } 45% { transform: translate(-4px, 2px) } 60% { transform: translate(3px, -1px) skewX(-3deg) } 100% { transform: none } }
+.just-shifted .rift-after, .just-shifted .hud-top { animation: jolt .6s steps(6, end); }

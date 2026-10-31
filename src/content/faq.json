@@ -1,0 +1,9 @@
+[
+  { "id": "when", "group": "The basics", "q": "When and where is IGNUS '27?", "a": "On the IIT Jodhpur campus, over four days in February 2027. Exact dates will be announced here and on our socials.", "order": 1 },
+  { "id": "who", "group": "The basics", "q": "Who can attend?", "a": "Students from any college with a valid ID, plus anyone holding an IGNUS pass. Some events are open to the public.", "order": 2 },
+  { "id": "register", "group": "Events", "q": "How do I register for an event?", "a": "Open the event on the Quest Board and press Register. Each event lists its team size, fee and deadline.", "order": 10 },
+  { "id": "multiple", "group": "Events", "q": "Can I take part in more than one event?", "a": "Yes, as long as the timings don't clash. The Schedule shows every event by day and time.", "order": 11 },
+  { "id": "pass", "group": "Passes & pronites", "q": "Do I need a pass for the pronites?", "a": "Yes. Pronite entry is through IGNUS passes. See the Passes page for what each pass includes.", "order": 20 },
+  { "id": "stay", "group": "Travel & stay", "q": "Is accommodation available?", "a": "Shared campus accommodation is offered with the Pass + Stay option, subject to availability.", "order": 30 },
+  { "id": "reach", "group": "Travel & stay", "q": "How do I reach IIT Jodhpur?", "a": "The campus is on NH 62 (Nagaur Road), outside Jodhpur city. Travel and shuttle details from Jodhpur Junction and Jodhpur Airport will be shared before the fest.", "order": 31 }
+]

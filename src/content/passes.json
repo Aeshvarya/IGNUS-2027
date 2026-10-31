@@ -1,0 +1,5 @@
+[
+  { "id": "day-pass", "name": "Day Pass", "price": "₹ TBA", "blurb": "One day inside the circle.", "perks": ["Entry for one fest day", "All open events that day", "That night's pronite (standing)"], "url": null, "highlight": false, "order": 1 },
+  { "id": "full-pass", "name": "Full Quest Pass", "price": "₹ TBA", "blurb": "All four days. The whole storyline.", "perks": ["Entry all four days", "All four pronites", "Priority entry lane", "IGNUS '27 sticker pack"], "url": null, "highlight": true, "order": 2 },
+  { "id": "stay-pass", "name": "Pass + Stay", "price": "₹ TBA", "blurb": "For players travelling in.", "perks": ["Full Quest Pass", "Campus accommodation (shared)", "Mess meal coupons"], "url": null, "highlight": false, "order": 3 }
+]
