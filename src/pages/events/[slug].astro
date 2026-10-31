@@ -1,0 +1,72 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import EventCard from '../../components/EventCard.astro';
+import Footer from '../../components/Footer.astro';
+import { AVATARS, CATEGORIES, CATEGORY_STYLE, SITE } from '../../config/site';
+import { registerHref } from '../../lib/api';
+import { dayLabel, dayTimeISO } from '../../lib/dates';
+import '../../styles/pages.css';
+
+export async function getStaticPaths() {
+  const events = await getCollection('events');
+  return events.map((event) => ({ params: { slug: event.id }, props: { event, all: events } }));
+}
+
+const { event, all } = Astro.props;
+const e = event.data;
+const { Content } = await render(event);
+const reg = registerHref({ slug: event.id, registerUrl: e.registerUrl });
+const [stickerClass] = CATEGORY_STYLE[e.category];
+const related = all.filter((x) => x.id !== event.id && (x.data.category === e.category || x.data.avatars.some((a) => e.avatars.includes(a)))).sort((a, b) => a.data.order - b.data.order).slice(0, 3);
+const jsonLd = {
+  '@context': 'https://schema.org', '@type': 'Event', name: `${e.title} · ${SITE.name}`, description: e.tagline,
+  startDate: dayTimeISO(e.day, e.start), ...(e.end ? { endDate: dayTimeISO(e.day, e.end) } : {}),
+  eventStatus: 'https://schema.org/EventScheduled', eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+  location: { '@type': 'Place', name: `${e.venue}, ${SITE.venue.name}`, address: SITE.venue.address },
+  organizer: { '@type': 'Organization', name: `${SITE.name}, ${SITE.college}` },
+  superEvent: { '@type': 'Event', name: SITE.name },
+};
+---
+<Base page="event" title={e.title} description={`${e.tagline} ${CATEGORIES[e.category].label} at IGNUS '27, Day ${e.day}, ${e.venue}.`}>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <div class="page-scrim" aria-hidden="true"></div>
+  <article class="page">
+    <a class="back-link" href="/events/">← Quest board</a>
+    <header class="page-hero">
+      <p class:list={['sticker', stickerClass]}>{CATEGORIES[e.category].label}</p>
+      <h1 class="page-title" data-reveal="lines">{e.title}</h1>
+      <p class="page-lede">{e.tagline}</p>
+    </header>
+
+    <div class="ev-detail">
+      <div class="panel-ink prose">
+        <Content />
+      </div>
+      <aside class="panel-ink" aria-label="Event details">
+        <dl class="facts">
+          <div><dt>When</dt><dd><time datetime={dayTimeISO(e.day, e.start)}>Day {e.day} · {dayLabel(e.day)}<br>{e.start}{e.end && `–${e.end}`}</time></dd></div>
+          <div><dt>Where</dt><dd>{e.venue}</dd></div>
+          {e.prize && <div><dt>Loot</dt><dd>{e.prize}</dd></div>}
+          {e.teamSize && <div><dt>Party size</dt><dd>{e.teamSize}</dd></div>}
+          {e.fee && <div><dt>Entry</dt><dd>{e.fee}</dd></div>}
+          <div><dt>For</dt><dd>{e.avatars.map((a) => AVATARS[a].name).join(' · ')}</dd></div>
+        </dl>
+        <div class="actions">
+          {reg
+            ? <a class="btn btn-primary" href={reg} data-register>Register</a>
+            : <span class="btn btn-primary" aria-disabled="true">Registrations open soon</span>}
+          {e.rulebookUrl && <a class="btn btn-ghost" href={e.rulebookUrl} target="_blank" rel="noopener">Rulebook</a>}
+        </div>
+      </aside>
+    </div>
+
+    {related.length > 0 && (
+      <section aria-labelledby="related">
+        <h2 class="section-title" id="related">More quests like this</h2>
+        <ul class="ev-grid" data-stagger>{related.map((ev) => <EventCard event={ev} />)}</ul>
+      </section>
+    )}
+  </article>
+  <Footer />
+</Base>

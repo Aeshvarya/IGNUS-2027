@@ -77,7 +77,8 @@ function labelTexture(text) {
 export function buildShiftLayer(ctx, mats) {
   const { U, scene, shiftOnly, R, rnd, PAL, small, gradientMap } = ctx;
 
-  // graffiti on the stone faces and on the low plaza walls
+  // graffiti on the stone faces and on the low plaza walls (the atlas is reused by the floating gallery)
+  let graffitiTex;
   {
     const decals = []; let cellI = 0;
     const decal = (x, y, z, size, rotY) => {
@@ -92,7 +93,8 @@ export function buildShiftLayer(ctx, mats) {
       decal(s * 4.6, PLINTH_TOP + 1.6, faceZ, 1.3, 0);
     }
     WALLS.forEach(([x, z]) => { const s = Math.sign(x); for (const dz of [-12, -6, 0, 6, 12]) decal(x - s * 0.37, 0.6, z + dz, 1.1, -s * Math.PI / 2); });
-    shiftOnly.add(new THREE.Mesh(mergeGeometries(decals), new THREE.MeshBasicMaterial({ map: graffitiAtlas(rnd), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, color: new THREE.Color(1.5, 1.5, 1.5) })));
+    graffitiTex = graffitiAtlas(rnd);
+    shiftOnly.add(new THREE.Mesh(mergeGeometries(decals), new THREE.MeshBasicMaterial({ map: graffitiTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, color: new THREE.Color(1.5, 1.5, 1.5) })));
   }
 
   // the berm: the glowing boundary of the magic circle
@@ -107,7 +109,8 @@ export function buildShiftLayer(ctx, mats) {
     shiftOnly.add(new THREE.Mesh(new THREE.TubeGeometry(new ArcCurve(42, 1.32), 260, 0.08, 6, false), new THREE.MeshBasicMaterial({ color: new THREE.Color(HEX.rani).multiplyScalar(3) })));
   }
 
-  // orbiting Devanagari runes
+  // orbiting Devanagari runes (the atlas is also reused by the crossing tunnel)
+  let runeTex;
   const runeMat = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
     const glyphs = ['अ', 'इ', 'ग', 'न', 'स', 'भ', 'व', 'त', 'र', 'ई', 'ज', 'क', 'प', 'ल', 'य', 'ह'];
@@ -118,7 +121,7 @@ export function buildShiftLayer(ctx, mats) {
       g.shadowBlur = 0; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 56, 0, Math.PI * 2); g.stroke();
     });
     return new THREE.ShaderMaterial({
-      uniforms: { uTime: U.time, uPix: U.pix, uAccent: U.accent, uAtlas: { value: new THREE.CanvasTexture(c) } },
+      uniforms: { uTime: U.time, uPix: U.pix, uAccent: U.accent, uAtlas: { value: (runeTex = new THREE.CanvasTexture(c)) } },
       vertexShader: /* glsl */`
 attribute float aGlyph; attribute float aSize; attribute float aSeed; attribute vec3 aColor;
 uniform float uTime; uniform float uPix; varying float vG; varying vec3 vC; varying float vA;
@@ -191,5 +194,5 @@ void main(){ vec2 c = gl_PointCoord * 2.0 - 1.0; float a = atan(c.y, c.x);
     const p = new THREE.Points(g, burstMat); p.frustumCulled = false; scene.add(p);
   }
 
-  return { runes, markers, planet, burstMat };
+  return { runes, markers, planet, burstMat, runeTex, graffitiTex };
 }

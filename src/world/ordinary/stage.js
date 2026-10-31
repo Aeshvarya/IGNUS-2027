@@ -112,6 +112,7 @@ export function buildPool(ctx) {
       uShift: { value: 0 }, uTint: { value: new THREE.Color(0.9, 0.85, 0.8) }, uStone: { value: new THREE.Color(0.06, 0.05, 0.045) },
       uAccent: { value: new THREE.Color() }, uPink: { value: new THREE.Color(HEX.rani) }, uCyan: { value: new THREE.Color(HEX.cyan) }, uAcid: { value: new THREE.Color(HEX.acid) }, uTime: { value: 0 },
       uSkyLo: { value: new THREE.Color(1.0, 0.5, 0.2) }, uSkyHi: { value: new THREE.Color(0.08, 0.07, 0.08) }, uGlowC: { value: new THREE.Color(0.2, 0.8, 1.0) },
+      uWave: { value: new THREE.Vector2() }, uWaveCol: { value: new THREE.Color() }, uRip: { value: [] },
     },
     vertexShader: /* glsl */`
 uniform mat4 textureMatrix; varying vec4 vUvR; varying vec3 vWPos;
@@ -122,7 +123,7 @@ void main(){ vUvR = textureMatrix * vec4(position, 1.0); vec4 wp = modelMatrix *
 }`,
     fragmentShader: /* glsl */`
 uniform vec3 color; uniform sampler2D tDiffuse; uniform float uShift; uniform vec3 uTint; uniform vec3 uStone;
-uniform vec3 uSkyLo; uniform vec3 uSkyHi; uniform vec3 uGlowC;
+uniform vec3 uSkyLo; uniform vec3 uSkyHi; uniform vec3 uGlowC; uniform vec4 uRip[6];
 varying vec4 vUvR; varying vec3 vWPos;
 #include <fog_pars_fragment>
 ${NOISE}
@@ -132,6 +133,15 @@ void main(){
   float n = fbm(p * 0.22 + 3.0);
   float streak = vnoise(vec2(p.x * 3.2, p.y * 0.35 + uTime * 0.25)) - 0.5;
   float rip = vnoise(p * vec2(1.8, 4.5) + vec2(uTime * 0.35, -uTime * 0.5)) - 0.5;
+  // rings from the visitor's cursor (uRip: x, z, strength, birth time)
+  float rw = 0.0;
+  for (int i = 0; i < 6; i++) {
+    float age = uTime - uRip[i].w;
+    if (age < 0.0 || age > 3.2) continue;
+    float d = distance(p, uRip[i].xy); float front = age * 5.5;
+    rw += sin((d - front) * 4.5) * exp(-abs(d - front) * 0.9) * exp(-age * 1.2) * uRip[i].z;
+  }
+  rip += rw * 0.9;
   vec4 uvr = vUvR;
   uvr.x += rip * 0.006 * uvr.w;
   uvr.y += (streak * 0.05 + rip * 0.01) * uvr.w;
@@ -141,6 +151,7 @@ void main(){
   vec3 stone = uStone * (0.7 + 0.5 * hash12(floor(tp))) * (1.0 - grout * 0.5);
   vec3 col = mix(stone + refl * 0.22, refl * uTint, wet);
   if (uShift > 0.5) col += magicCircle(vWPos) * mix(0.9, 0.55, wet);
+  col += uGlowC * max(rw, 0.0) * 0.22;
   gl_FragColor = vec4(col, 1.0);
   #include <fog_fragment>
 }`,
@@ -176,7 +187,8 @@ void main(){
   }
   pool.rotation.x = -Math.PI / 2; pool.position.set(0, 0.02, 19);
   pool.material.fog = true;
-  pool.material.uniforms.uTime = U.time; pool.material.uniforms.uAccent = U.accent;
+  const pu = pool.material.uniforms;
+  pu.uTime = U.time; pu.uAccent = U.accent; pu.uWave = U.wave; pu.uWaveCol = U.waveCol; pu.uRip = U.ripples;
   scene.add(pool);
   return { pool, reflect };
 }
@@ -186,7 +198,7 @@ export function buildGround(ctx, mats) {
   const { U, scene, swap } = ctx;
   const groundGeo = new THREE.PlaneGeometry(520, 520); groundGeo.rotateX(-Math.PI / 2);
   const neonGroundMat = new THREE.ShaderMaterial({
-    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uAccent: { value: new THREE.Color() }, uPink: { value: new THREE.Color(HEX.rani) }, uCyan: { value: new THREE.Color(HEX.cyan) }, uAcid: { value: new THREE.Color(HEX.acid) } }]),
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uAccent: { value: new THREE.Color() }, uPink: { value: new THREE.Color(HEX.rani) }, uCyan: { value: new THREE.Color(HEX.cyan) }, uAcid: { value: new THREE.Color(HEX.acid) }, uWave: { value: new THREE.Vector2() }, uWaveCol: { value: new THREE.Color() } }]),
     vertexShader: WORLD_VS,
     fragmentShader: /* glsl */`
 varying vec3 vWPos; varying vec2 vUv;
@@ -205,6 +217,6 @@ void main(){
 }`,
     fog: true,
   });
-  neonGroundMat.uniforms.uTime = U.time; neonGroundMat.uniforms.uAccent = U.accent;
+  Object.assign(neonGroundMat.uniforms, { uTime: U.time, uAccent: U.accent, uWave: U.wave, uWaveCol: U.waveCol });
   scene.add(swap(new THREE.Mesh(groundGeo), mats.pavingMat, neonGroundMat));
 }

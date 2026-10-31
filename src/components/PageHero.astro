@@ -1,0 +1,10 @@
+---
+interface Props { kicker: string; title: string; lede?: string; sticker?: string }
+const { kicker, title, lede, sticker = 's-rani' } = Astro.props;
+---
+<header class="page-hero">
+  <p class:list={['sticker', sticker]}>{kicker}</p>
+  <h1 class="page-title" data-reveal="lines">{title}</h1>
+  {lede && <p class="page-lede">{lede}</p>}
+  <slot />
+</header>

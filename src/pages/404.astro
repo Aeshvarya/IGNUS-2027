@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/pages.css';
+---
+<Base page="404" title="Out of bounds" description="This page fell out of the map.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page" style="min-height:80vh;align-content:center;justify-items:center;text-align:center">
+    <p class="sticker s-rani" style="justify-self:center">Error 404</p>
+    <h1 class="page-title">You fell out of the map</h1>
+    <p class="page-lede">This path does not exist inside the magic circle. Respawn and try another quest.</p>
+    <div class="actions" style="justify-content:center">
+      <a class="btn btn-primary" href="/">Respawn</a>
+      <a class="btn btn-ghost" href="/events/">Quest board</a>
+    </div>
+  </div>
+</Base>

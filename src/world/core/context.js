@@ -22,13 +22,20 @@ export const WALLS = [[-28, 10], [28, 10]];
 
 export function createContext({ scene, quality }) {
   const rnd = mulberry32(2027);
+  const rnd2 = mulberry32(1999); // separate stream for Phase 4 additions, so the original world stays identical
   const ctx = {
     scene,
     quality,
     small: quality.small,
     rnd,
     R: (a, b) => a + (b - a) * rnd(),
-    U: { time: { value: 0 }, pix: { value: 1 }, shift: { value: 0 }, accent: { value: new THREE.Color(HEX.rani) } },
+    rnd2,
+    R2: (a, b) => a + (b - a) * rnd2(),
+    U: {
+      time: { value: 0 }, pix: { value: 1 }, shift: { value: 0 }, accent: { value: new THREE.Color(HEX.rani) },
+      wave: { value: new THREE.Vector2(0, 0) }, waveCol: { value: new THREE.Color(HEX.rani) }, // paint wave: (radius, strength)
+      ripples: { value: Array.from({ length: 6 }, () => new THREE.Vector4(0, 0, 0, -99)) }, // (x, z, strength, birth time)
+    },
     PAL: [HEX.rani, HEX.acid, HEX.cyan, HEX.saffron, HEX.blue].map((h) => new THREE.Color(h)),
     thresholdOnly: new THREE.Group(),
     shiftOnly: new THREE.Group(),

@@ -1,0 +1,44 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
+import EventCard from '../../components/EventCard.astro';
+import Footer from '../../components/Footer.astro';
+import { AVATARS, AVATAR_KEYS, CATEGORIES } from '../../config/site';
+import { DAYS, dayLabel } from '../../lib/dates';
+import '../../styles/pages.css';
+
+const events = (await getCollection('events')).sort((a, b) => a.data.order - b.data.order || a.data.day - b.data.day || a.data.start.localeCompare(b.data.start));
+const cats = Object.entries(CATEGORIES) as [keyof typeof CATEGORIES, (typeof CATEGORIES)[keyof typeof CATEGORIES]][];
+---
+<Base page="events" title="Events" description="Every IGNUS '27 event, read as a quest: boss encounters, side quests, skill trees and rare discoveries. Filter by day and by the class you play.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Quest board" title="Pick your quests" lede="Every competition, headline event, workshop and installation at IGNUS ’27. Filter by type, by day, or by the class you play." />
+
+    <section class="filters panel-ink" aria-label="Filter events" data-filters>
+      <div class="filter-row" role="group" aria-label="Type">
+        <span class="label">Type</span>
+        <button class="chip" type="button" data-filter="category" data-value="all" aria-pressed="true">All</button>
+        {cats.map(([k, c]) => <button class="chip" type="button" data-filter="category" data-value={k} aria-pressed="false">{c.plural}</button>)}
+      </div>
+      <div class="filter-row" role="group" aria-label="Day">
+        <span class="label">Day</span>
+        <button class="chip" type="button" data-filter="day" data-value="all" aria-pressed="true">All days</button>
+        {DAYS.map((d) => <button class="chip" type="button" data-filter="day" data-value={String(d)} aria-pressed="false">Day {d} · {dayLabel(d)}</button>)}
+      </div>
+      <div class="filter-row" role="group" aria-label="Class">
+        <span class="label">Class</span>
+        <button class="chip" type="button" data-filter="avatar" data-value="all" aria-pressed="true">Any class</button>
+        {AVATAR_KEYS.map((k) => <button class="chip" type="button" data-filter="avatar" data-value={k} aria-pressed="false" style={`--c:${AVATARS[k].color}`}><span class="sw" aria-hidden="true"></span>{AVATARS[k].name}</button>)}
+      </div>
+      <p class="result-count" aria-live="polite" data-count>{events.length} quests</p>
+    </section>
+
+    <ul class="ev-grid" data-ev-grid>
+      {events.map((ev) => <EventCard event={ev} />)}
+    </ul>
+    <p class="empty" data-empty hidden>No quests match. Try another filter.</p>
+  </div>
+  <Footer />
+</Base>

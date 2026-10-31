@@ -42,12 +42,14 @@ export function applyRootState() {
   document.querySelectorAll('[data-lite-toggle]').forEach((b) => b.setAttribute('aria-pressed', String(lite)));
 }
 
-export function setAvatar(key) {
+/** Sets the player's class. animate: the crest flies into the tree and a paint wave recolours the world. */
+export function setAvatar(key, { animate = false } = {}) {
   if (!AVATARS[key]) return;
   state.avatar = key;
   write(AV_KEY, key);
   applyRootState();
-  state.world?.setAccent(AVATARS[key].color);
+  if (animate) state.world?.chooseAvatar(key, AVATARS[key].color);
+  else state.world?.setAccent(AVATARS[key].color);
 }
 
 /** User toggled Lite mode: remember the explicit choice. */

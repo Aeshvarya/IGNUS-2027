@@ -1,0 +1,21 @@
+---
+import { SITE } from '../config/site';
+/** Live countdown to the fest (the runtime ticks it). Server-renders the target date as text. */
+const start = new Date(SITE.dates.start);
+const end = new Date(SITE.dates.end);
+const label = start.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: SITE.timezone });
+---
+<p class="countdown" data-countdown={SITE.dates.start} data-countdown-end={SITE.dates.end} aria-live="off">
+  <span class="cd-label">Respawn in</span>
+  <span class="cd-clock" data-cd-clock><span data-cd="d">--</span><small>d</small><span data-cd="h">--</span><small>h</small><span data-cd="m">--</span><small>m</small><span data-cd="s">--</span><small>s</small></span>
+  <span class="cd-date">Day 1 · <time datetime={start.toISOString()}>{label}</time></span>
+  <span class="sr-only">IGNUS starts on {label} and ends on {end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', timeZone: SITE.timezone })}.</span>
+</p>
+
+<style is:global>
+  .countdown { margin: .4rem 0 0; display: grid; justify-items: center; gap: .35rem; font-family: var(--f-hud); text-transform: uppercase; }
+  .cd-label, .cd-date { font-size: var(--t-xs); letter-spacing: .24em; color: var(--fg-dim); }
+  .cd-clock { display: flex; align-items: baseline; gap: .15rem .3rem; font-family: var(--f-pop); font-size: var(--t-l); color: var(--paper); font-variant-numeric: tabular-nums; text-shadow: 3px 3px 0 var(--accent); }
+  .cd-clock span { min-width: 2ch; text-align: right; }
+  .cd-clock small { font-family: var(--f-hud); font-size: var(--t-xs); color: var(--lilac); text-shadow: none; margin-right: .5rem; }
+</style>

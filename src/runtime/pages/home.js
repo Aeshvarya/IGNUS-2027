@@ -49,6 +49,7 @@ export function mountHome(app) {
       body.classList.toggle('is-shift', s);
       body.dataset.realm = s ? 'shift' : 'ordinary';
       hudRealm.textContent = s ? 'Realm · Ignus' : 'Realm · Ordinary';
+      app.realm(s, lastShift !== null);
       if (lastShift !== null) {
         body.classList.add('just-shifted');
         clearTimeout(joltTimer);
@@ -68,7 +69,14 @@ export function mountHome(app) {
 
   /* ---------- avatar picker ---------- */
   if (state.avatar) { const el = document.getElementById('av-' + state.avatar); if (el) el.checked = true; }
-  document.querySelectorAll('input[name="avatar"]').forEach((inp) => on(inp, 'change', () => { if (AVATARS[inp.value]) { setAvatar(inp.value); lastLine = ''; } }));
+  document.querySelectorAll('input[name="avatar"]').forEach((inp) => {
+    on(inp, 'change', () => { if (AVATARS[inp.value]) { setAvatar(inp.value, { animate: true }); app.blip(990); lastLine = ''; } });
+    const label = inp.closest('.avatar');
+    on(label, 'mouseenter', () => state.world?.hoverAvatar(inp.value));
+    on(label, 'mouseleave', () => state.world?.hoverAvatar(null));
+    on(inp, 'focus', () => state.world?.hoverAvatar(inp.value));
+    on(inp, 'blur', () => state.world?.hoverAvatar(null));
+  });
 
   /* ---------- quests ↔ world markers ---------- */
   document.querySelectorAll('.quest').forEach((li) => {
@@ -83,6 +91,6 @@ export function mountHome(app) {
   return {
     targetU: () => scrollToU(scrollY),
     frame,
-    destroy() { clearTimeout(joltTimer); cleanups.forEach((f) => f()); state.world?.highlight(-1); body.classList.remove('just-shifted'); },
+    destroy() { clearTimeout(joltTimer); cleanups.forEach((f) => f()); state.world?.highlight(-1); state.world?.hoverAvatar(null); body.classList.remove('just-shifted'); },
   };
 }

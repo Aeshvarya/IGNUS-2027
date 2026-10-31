@@ -2,20 +2,25 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clamp, smooth } from './core/util.js';
-import { createContext, LAMPS, PORTAL, ZF, SUN } from './core/context.js';
+import { createContext, LAMPS, PORTAL, ZF, SUN, RY } from './core/context.js';
 import { createMaterials, buildPlinth, buildRivulet, buildPool, buildGround } from './ordinary/stage.js';
 import { createTree } from './ordinary/tree.js';
 import { buildPortal } from './ordinary/portal.js';
 import { buildLampsAndWalls, buildSurroundings } from './ordinary/landscape.js';
 import { buildSky, buildRays, buildMotes } from './core/atmosphere.js';
 import { buildShiftLayer } from './shift/layer.js';
+import { buildSkyline } from './ordinary/skyline.js';
+import { buildIslands } from './shift/islands.js';
+import { buildCrests } from './shift/crests.js';
+import { buildFireworks } from './shift/fireworks.js';
 import { buildPost } from './core/post.js';
 import { sampleStory } from './core/camera.js';
 
 /**
  * Builds the IGNUS world into `canvas`.
  * @param {{ canvas: HTMLCanvasElement, quality: object, reduceMotion: boolean, onProgress?: (f:number)=>void }} opts
- * @returns world API: update(u, dt, t, measure), resize(), dist(), setAccent(hex), highlight(i), stats()
+ * @returns world API: update(u, dt, t, measure), resize(), dist(), setAccent(hex), chooseAvatar(key, hex),
+ *          hoverAvatar(key), highlight(i), pick(x, y), stats()
  */
 export async function createWorld({ canvas, quality, reduceMotion, onProgress }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
@@ -51,7 +56,12 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   const { sky, envA, envB } = buildSky(ctx, renderer);
   const rays = buildRays(ctx);
   buildMotes(ctx);
-  const { runes, markers, planet, burstMat } = buildShiftLayer(ctx, mats);
+  const { runes, markers, planet, burstMat, runeTex, graffitiTex } = buildShiftLayer(ctx, mats);
+  // Phase 4 additions (their own RNG stream, so everything above is unchanged)
+  buildSkyline(ctx);
+  const islands = buildIslands(ctx, mats, { graffitiTex });
+  const crests = buildCrests(ctx);
+  const fireworks = buildFireworks(ctx);
 
   /* ---------- lights ---------- */
   const hemi = new THREE.HemisphereLight(0xffcf9a, 0x24180f, 0.35); scene.add(hemi);
@@ -63,7 +73,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   const neonR = new THREE.PointLight(0xdcff3c, 0, 34, 2); neonR.position.set(14, 7, -14);
   scene.add(neonL, neonR);
 
-  const { composer, inkPass, bloom, finalPass } = buildPost(renderer, scene, camera, ctx);
+  const { composer, inkPass, bloom, finalPass, tunnel, godrays } = buildPost(renderer, scene, camera, ctx, { runeTex });
   inkPass.enabled = quality.ink;
   { // bloom at a fraction of full resolution on lighter tiers
     const setBloomSize = bloom.setSize.bind(bloom);
@@ -130,6 +140,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
     camera.aspect = w / h;
     baseFov = clamp(2 * Math.atan(Math.tan(27 * Math.PI / 180) / camera.aspect) * 180 / Math.PI, 48, 78);
     inkPass.uniforms.uRes.value.set(w * pr, h * pr); finalPass.uniforms.uRes.value.set(w * pr, h * pr); finalPass.uniforms.uDot.value = 4.5 * pr;
+    tunnel.uniforms.uRes.value.set(w, h); if (godrays) godrays.uniforms.uRes.value.set(w, h);
     U.pix.value = pr * h / 900;
   }
   resize();
@@ -145,13 +156,49 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   /* ---------- warm both realms up behind the loader ---------- */
   const camP = new THREE.Vector3(), camL = new THREE.Vector3(), look = new THREE.Vector3(), right = new THREE.Vector3(), upv = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
   sampleStory(0, camP, camL); camera.position.copy(camP); camera.lookAt(camL); camera.updateProjectionMatrix(); sky.position.copy(camera.position);
+  tunnel.enabled = true; if (godrays) godrays.enabled = true; // compile every pass up front
   setRealm(true); renderer.compile(scene, camera); composer.render();
   setRealm(false); renderer.compile(scene, camera); composer.render();
+  tunnel.enabled = false; if (godrays) godrays.enabled = false;
 
   /* ---------- per frame ---------- */
   let tmx = 0, tmy = 0, mx = 0, my = 0, kick = 0, burstStart = -99, first = true, fpsAcc = 0, fpsN = 0, hlTarget = -1;
-  const onPointer = (e) => { tmx = (e.clientX / innerWidth) * 2 - 1; tmy = -((e.clientY / innerHeight) * 2 - 1); };
+  let lastU = 0, now = 0;
+  const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2(), hit = new THREE.Vector3();
+  const waterPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.02);
+  let ripI = 0, lastRip = -1, lastRipP = new THREE.Vector3(1e9, 0, 0);
+  const onPointer = (e) => {
+    tmx = (e.clientX / innerWidth) * 2 - 1; tmy = -((e.clientY / innerHeight) * 2 - 1);
+    // rings on the wet plaza under the cursor (hero view only)
+    if (realm || lastU > 1.6 || reduceMotion || now - lastRip < 0.11) return;
+    ndc.set(tmx, tmy); raycaster.setFromCamera(ndc, camera);
+    if (!raycaster.ray.intersectPlane(waterPlane, hit)) return;
+    if (Math.abs(hit.x) > 41 || hit.z < -7 || hit.z > 45 || hit.distanceTo(lastRipP) < 0.9) return;
+    U.ripples.value[ripI].set(hit.x, hit.z, 1, now); ripI = (ripI + 1) % U.ripples.value.length;
+    lastRip = now; lastRipP.copy(hit);
+  };
   addEventListener('pointermove', onPointer, { passive: true });
+
+  /* ---------- avatar choice: crest flies into the tree, then a paint wave recolours the world ---------- */
+  const accFrom = new THREE.Color(), accTo = new THREE.Color();
+  let accT = -1, accDelay = 0;
+  function chooseAvatar(key, hex) {
+    accFrom.copy(U.accent.value); accTo.set(hex);
+    accDelay = realm && !reduceMotion ? crests.choose(key) : 0;
+    accT = 0;
+  }
+  function stepAccent(dt, t) {
+    if (accT < 0) return;
+    if (accDelay > 0) { accDelay -= dt; if (accDelay <= 0) burstStart = t; return; }
+    accT = Math.min(1, accT + dt / (reduceMotion ? 0.2 : 1.3));
+    const e = 1 - Math.pow(1 - accT, 3);
+    U.accent.value.lerpColors(accFrom, accTo, Math.min(1, e * 1.4));
+    U.waveCol.value.copy(accTo);
+    U.wave.value.set(3 + e * 62, (1 - accT) * 1.3);
+    applyPalette();
+    if (accT >= 1) { accT = -1; U.wave.value.set(0, 0); }
+  }
+  const projTmp = new THREE.Vector3(), projTmp2 = new THREE.Vector3(), sunTmp = new THREE.Vector3();
   const cyanWhite = new THREE.Color(0.85, 1, 1), pinkWhite = new THREE.Color(1, 0.88, 0.96);
   const tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler();
 
@@ -171,7 +218,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
 
   function update(u, dt, t, measure = true) {
     renderer.info.reset();
-    U.time.value = t;
+    U.time.value = t; lastU = u; now = t;
     const s = u >= 3;
     if (s !== realm) { setRealm(s); if (!first) { kick = 1; if (s) burstStart = t; } }
     first = false;
@@ -202,6 +249,42 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
     fu.uVig.value = s ? 0.35 : 0.55; fu.uTime.value = t;
     burstMat.uniforms.uT.value = t - burstStart;
 
+    // the crossing: a wormhole while the camera passes through the portal
+    const tun = reduceMotion ? 0 : smooth(2.8, 2.96, u) * (1 - smooth(3.08, 3.32, u));
+    tunnel.enabled = tun > 0.002;
+    bloom.strength = (s ? 0.5 : 0.55) * (1 - smooth(0.2, 0.8, tun)); // bloom would haze the tunnel into grey
+    if (tunnel.enabled) {
+      const tu = tunnel.uniforms; tu.uAmt.value = tun; tu.uTime.value = t; tu.uDepth.value = t * 6 + u * 70;
+      if (!s) { tu.uA.value.setRGB(0.0, 0.05, 0.1); tu.uB.value.setRGB(0.3, 1.4, 1.8); tu.uC.value.setRGB(1.5, 2.2, 2.4); }
+      else { tu.uA.value.setRGB(0.12, 0.0, 0.18); tu.uB.value.copy(U.accent.value).multiplyScalar(1.6); tu.uC.value.setRGB(2.0, 2.4, 0.6); }
+      fu.uFlash.value = Math.max(smooth(0.988, 1.0, k) * 0.75, kick * 0.8) * (reduceMotion ? 0.55 : 1);
+      fu.uAberr.value = Math.min(fu.uAberr.value, 0.01);
+    }
+
+    // gravitational lensing around the portal rim
+    projTmp.set(0, PORTAL.y, ZF).project(camera);
+    projTmp2.set(0, PORTAL.y + RY, ZF).project(camera);
+    if (projTmp.z < 1 && tun < 0.5 && !reduceMotion) {
+      const asp = innerWidth / innerHeight;
+      const R = Math.hypot((projTmp2.x - projTmp.x) * 0.5 * asp, (projTmp2.y - projTmp.y) * 0.5);
+      fu.uLensC.value.set(projTmp.x * 0.5 + 0.5, projTmp.y * 0.5 + 0.5); fu.uLensR.value = Math.min(0.9, R);
+      fu.uLens.value = s ? 0.35 : 0.7 + 2.4 * k;
+    } else fu.uLens.value = 0;
+
+    // god rays from the setting sun (ordinary realm only)
+    if (godrays) {
+      sunTmp.copy(camera.position).addScaledVector(SUN, 300).project(camera);
+      const on = !s && sunTmp.z < 1 && Math.abs(sunTmp.x) < 1.6 && sunTmp.y < 2.2;
+      godrays.enabled = on;
+      if (on) { godrays.uniforms.uSun.value.set(sunTmp.x * 0.5 + 0.5, sunTmp.y * 0.5 + 0.5); godrays.uniforms.uAmt.value = (1 - k) * (1 - smooth(1.2, 1.6, Math.abs(sunTmp.x))); }
+    }
+
+    // the Shift's set pieces
+    stepAccent(dt, t);
+    crests.update(s ? smooth(3.45, 3.8, u) * (1 - smooth(4.55, 4.95, u)) : 0, t, dt);
+    fireworks.set(s ? 0.25 + 0.75 * smooth(5.15, 5.75, u) : 0);
+    if (s) islands.update(t);
+
     if (s) {
       runes.rotation.y = t * 0.04;
       planet.rotation.y += dt * 0.05;
@@ -217,7 +300,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
 
     composer.render();
 
-    if (!measure) { fpsAcc = 0; fpsN = 0; return; }
+    if (!measure || quality.governor === false) { fpsAcc = 0; fpsN = 0; return; }
     fpsAcc += dt; fpsN++;
     if (fpsAcc > 2.5) {
       if (fpsAcc / fpsN > 0.028) { const step = degrade(); if (step) degraded.push(step); }
@@ -231,6 +314,17 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
     stats: () => ({ tier: quality.name, pr: +pr.toFixed(2), mirrorEvery: reflect.every, bloom: bloom.enabled, ink: inkPass.enabled, degraded: [...degraded], calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
     dist: () => camera.position.distanceTo(PORTAL),
     setAccent(hex) { U.accent.value.set(hex); applyPalette(); },
+    chooseAvatar,
+    /** QA only: direct access to post passes and uniforms. */
+    debug: () => ({ tunnel, godrays, bloom, inkPass, finalPass, U, camera }),
+    hoverAvatar(key) { crests.hover(key); },
     highlight(i) { hlTarget = i; },
+    /** Quest marker under a screen point (clientX/Y), or -1. */
+    pick(x, y) {
+      if (!realm) return -1;
+      ndc.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1); raycaster.setFromCamera(ndc, camera);
+      for (let i = 0; i < markers.length; i++) if (raycaster.intersectObjects([markers[i].gem, markers[i].spr], false).length) return i;
+      return -1;
+    },
   };
 }

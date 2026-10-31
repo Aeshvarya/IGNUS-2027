@@ -37,7 +37,7 @@ export const SITE = {
 
 /** Feature switches. posters: Lite-mode stills exist in public/posters/ (scripts/render-posters.mjs). */
 export const FEATURES = {
-  posters: false,
+  posters: true,
 } as const;
 
 export type NavItem = { href: string; label: string; short?: string };
@@ -80,3 +80,11 @@ export const CATEGORIES = {
   discovery: { label: 'Rare discovery', plural: 'Rare discoveries', blurb: 'Installations and informals placed around campus.' },
 } as const;
 export type CategoryKey = keyof typeof CATEGORIES;
+
+/** Sticker class and accent colour per category. */
+export const CATEGORY_STYLE: Record<CategoryKey, readonly [string, string]> = {
+  boss: ['s-rani', 'var(--rani)'],
+  side: ['', 'var(--acid)'],
+  workshop: ['s-cyan', 'var(--portal)'],
+  discovery: ['s-saffron', 'var(--saffron)'],
+};

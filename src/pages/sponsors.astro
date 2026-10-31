@@ -1,0 +1,44 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Footer from '../components/Footer.astro';
+import { SITE } from '../config/site';
+import '../styles/pages.css';
+
+const all = await getCollection('sponsors');
+const TIERS = [
+  { key: 'title', name: 'Title sponsor', min: '100%', h: '11rem' },
+  { key: 'platinum', name: 'Platinum', min: '18rem', h: '8rem' },
+  { key: 'gold', name: 'Gold', min: '14rem', h: '7rem' },
+  { key: 'partner', name: 'Partners', min: '11rem', h: '6rem' },
+] as const;
+---
+<Base page="sponsors" title="Sponsors" description="The brands that power IGNUS '27 at IIT Jodhpur.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Allies" sticker="s-cyan" title="Powered by" lede="IGNUS runs on the support of our partners. Thank you for keeping the circle lit." />
+    {TIERS.map((t) => {
+      const list = all.filter((s) => s.data.tier === t.key);
+      return list.length > 0 && (
+        <section class="tier" aria-labelledby={`tier-${t.key}`}>
+          <h2 class="section-title" id={`tier-${t.key}`}>{t.name}</h2>
+          <ul class="logo-wall" style={`--min:${t.min};--h:${t.h}`} data-stagger>
+            {list.map((s) => {
+              const inner = s.data.logo
+                ? <><img src={s.data.logo} alt={s.data.name} loading="lazy" /><small>{s.data.role}</small></>
+                : <><b>{s.data.name}</b><small>{s.data.role}</small></>;
+              return <li>{s.data.url ? <a class="logo-tile" href={s.data.url} target="_blank" rel="noopener sponsored">{inner}</a> : <div class="logo-tile">{inner}</div>}</li>;
+            })}
+          </ul>
+        </section>
+      );
+    })}
+    <section class="panel-ink">
+      <h2 class="section-title">Partner with IGNUS</h2>
+      <p class="page-lede">Put your brand in front of thousands of students across four days.{SITE.email ? ' Write to us and we will send the deck.' : ' Sponsorship contacts will be listed here.'}</p>
+      {SITE.email && <div class="actions"><a class="btn btn-primary" href={`mailto:${SITE.email}?subject=Sponsoring IGNUS '27`}>Get the deck</a></div>}
+    </section>
+  </div>
+  <Footer />
+</Base>

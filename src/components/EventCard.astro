@@ -1,0 +1,27 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { AVATARS, CATEGORIES, CATEGORY_STYLE } from '../config/site';
+import { dayLabel } from '../lib/dates';
+
+interface Props { event: CollectionEntry<'events'> }
+const { event } = Astro.props;
+const e = event.data;
+const [stickerClass, catColor] = CATEGORY_STYLE[e.category];
+---
+<li class="ev" data-category={e.category} data-day={e.day} data-avatars={e.avatars.join(' ')} data-flip-id={event.id}>
+  <a class="ev-card" href={`/events/${event.id}/`} style={`--cat:${catColor}`}>
+    <span class="ev-top">
+      <span class:list={['sticker', stickerClass]}>{CATEGORIES[e.category].label}</span>
+      <span class="ev-when">Day {e.day} · {e.start}</span>
+    </span>
+    <h3 class="ev-title">{e.title}</h3>
+    <p class="ev-tag">{e.tagline}</p>
+    <span class="ev-meta">
+      <span>{e.venue}</span>
+      <span class="ev-avs" title={e.avatars.map((a) => AVATARS[a].name).join(', ')}>
+        {e.avatars.map((a) => <i style={`--c:${AVATARS[a].color}`}></i>)}
+      </span>
+      <span class="sr-only">{dayLabel(e.day)}. For: {e.avatars.map((a) => AVATARS[a].name).join(', ')}.</span>
+    </span>
+  </a>
+</li>

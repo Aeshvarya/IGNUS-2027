@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/pages.css';
+
+const members = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order);
+const verticals = [...new Set(members.map((m) => m.data.vertical))];
+const COLORS = ['var(--rani)', 'var(--acid)', 'var(--portal)', 'var(--saffron)', 'var(--jodhpur)'];
+const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+---
+<Base page="team" title="Team" description="The students behind IGNUS '27 at IIT Jodhpur.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Game masters" sticker="s-paper" title="The team" lede="The students who build the magic circle every year." />
+    {verticals.map((v, vi) => (
+      <section aria-labelledby={`v-${vi}`}>
+        <h2 class="section-title" id={`v-${vi}`}>{v}</h2>
+        <ul class="team-grid" data-stagger>
+          {members.filter((m) => m.data.vertical === v).map((m, i) => (
+            <li class="member">
+              <span class="face" style={`--c:${COLORS[(vi + i) % COLORS.length]}`} aria-hidden="true">{m.data.photo ? <img src={m.data.photo} alt="" loading="lazy" /> : initials(m.data.name)}</span>
+              <h3>{m.data.name}</h3>
+              <p>{m.data.role}</p>
+              {m.data.email && <a class="label" href={`mailto:${m.data.email}`}>{m.data.email}</a>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+  <Footer />
+</Base>

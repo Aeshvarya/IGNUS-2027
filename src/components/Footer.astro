@@ -1,0 +1,17 @@
+---
+import { SITE, MENU } from '../config/site';
+const socials = Object.entries(SITE.social).filter(([, url]) => url);
+---
+<footer class="site-foot">
+  <div class="row">
+    <a href="/" aria-label="IGNUS home"><img src="/logos/wordmark-mono.svg" alt="IGNUS" width="1566" height="553" loading="lazy"></a>
+    <nav aria-label="Footer">
+      {MENU.map((n) => <a href={n.href}>{n.label}</a>)}
+      {socials.map(([name, url]) => <a href={url} rel="noopener" target="_blank">{name}</a>)}
+    </nav>
+  </div>
+  <div class="row">
+    <span class="meta">{SITE.name} · {SITE.college} · {SITE.theme} · <span lang="hi">{SITE.themeHi}</span></span>
+    {SITE.email && <a class="meta" href={`mailto:${SITE.email}`}>{SITE.email}</a>}
+  </div>
+</footer>

@@ -1,10 +1,13 @@
 ---
+import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import Countdown from '../components/Countdown.astro';
 import { SITE, AVATARS, AVATAR_KEYS } from '../config/site';
 import { registerHref } from '../lib/api';
 import '../styles/home.css';
 
 const reg = registerHref();
+const pronites = (await getCollection('pronites')).sort((a, b) => a.data.night - b.data.night);
 const QUESTS = [
   { q: -1, title: 'Cross the berm', text: 'The main quest. Step inside the magic circle. Everything after is the story.', tag: 'Main', href: null },
   { q: 0, title: 'Boss encounters', text: 'Headline events. Big crowds, big stages, one shot at it.', tag: 'Events', href: '/events/?category=boss' },
@@ -89,11 +92,32 @@ const QUESTS = [
     </div>
   </section>
 
+  <section class="bosses" id="bosses">
+    <div class="bosses-inner">
+      <p class="sticker s-paper">Boss encounters</p>
+      <h2 class="h2">Four nights. Four bosses.</h2>
+      <p class="lede">The pronite lineup unlocks closer to the fest. Every boss is revealed here first.</p>
+      <ol class="boss-row" data-stagger>
+        {pronites.map((p) => (
+          <li>
+            <a class="boss" href="/pronites/">
+              <span class="boss-night">Night {p.data.night}</span>
+              <span class="boss-sil" aria-hidden="true">{p.data.artist ? p.data.artist.slice(0, 1) : '?'}</span>
+              <span class="boss-name">{p.data.artist ?? 'Boss locked'}</span>
+              <span class="boss-genre">{p.data.title} · {p.data.genre}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
   <section class="register" id="register">
     <div class="register-inner">
       <p class="sticker s-saffron">Final level</p>
       <h2 class="h2">Enter the magic circle</h2>
       <p class="lede">Four days. One campus. A new set of rules.</p>
+      <Countdown />
       <div class="cta-row">
         <a class="btn btn-primary" href={reg ?? '/passes/'} data-register>Register</a>
         <button class="btn btn-ghost" id="backBtn" type="button">Back through the berm ↑</button>

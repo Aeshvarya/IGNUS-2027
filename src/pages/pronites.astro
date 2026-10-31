@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Footer from '../components/Footer.astro';
+import { dayLabel } from '../lib/dates';
+import { passHref } from '../lib/api';
+import '../styles/pages.css';
+
+const nights = (await getCollection('pronites')).sort((a, b) => a.data.night - b.data.night);
+const pass = passHref();
+---
+<Base page="pronites" title="Pronites" description="IGNUS '27 pronites: four nights, four boss encounters on the main stage.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Boss encounters" title="Four nights. Four bosses." lede="The main stage after dark. Each boss is revealed here first, closer to the fest. Entry is with an IGNUS pass." />
+    <ul class="boss-grid" data-stagger>
+      {nights.map((n) => (
+        <li class="boss-card">
+          <span class="label">Night {n.data.night} · {dayLabel(n.data.night)} · {n.data.start}</span>
+          <span class="boss-sil" aria-hidden="true">{n.data.artist ? n.data.artist.slice(0, 1) : '?'}</span>
+          <h2>{n.data.artist ?? 'Boss locked'}</h2>
+          <span class="label">{n.data.title} · {n.data.genre}</span>
+          <p>{n.data.teaser}</p>
+        </li>
+      ))}
+    </ul>
+    <div class="actions">
+      <a class="btn btn-primary" href={pass ?? '/passes/'}>Get a pass</a>
+      <a class="btn btn-ghost" href="/schedule/">See the schedule</a>
+    </div>
+  </div>
+  <Footer />
+</Base>

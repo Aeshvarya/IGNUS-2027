@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Footer from '../components/Footer.astro';
+import { passHref } from '../lib/api';
+import '../styles/pages.css';
+
+const passes = (await getCollection('passes')).sort((a, b) => a.data.order - b.data.order);
+---
+<Base page="passes" title="Passes" description="IGNUS '27 passes: day passes, full four-day passes and pass + stay packages.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Entry tokens" sticker="s-saffron" title="Choose your pass" lede="Every pass gets you inside the magic circle. Pick how long you stay." />
+    <ul class="pass-grid" data-stagger>
+      {passes.map((p) => {
+        const href = passHref({ id: p.id, url: p.data.url });
+        return (
+          <li class:list={['pass', p.data.highlight && 'is-hl']}>
+            {p.data.highlight ? <p class="sticker s-rani">Most picked</p> : <span class="label">Pass</span>}
+            <h2>{p.data.name}</h2>
+            <span class="price">{p.data.price}</span>
+            <div>
+              <p class="label" style="margin:0 0 .8rem">{p.data.blurb}</p>
+              <ul>{p.data.perks.map((perk) => <li>{perk}</li>)}</ul>
+            </div>
+            {href ? <a class="btn btn-primary" href={href}>Get {p.data.name}</a> : <span class="btn btn-primary" aria-disabled="true">On sale soon</span>}
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+  <Footer />
+</Base>

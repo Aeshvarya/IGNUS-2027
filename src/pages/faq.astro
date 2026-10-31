@@ -1,0 +1,41 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Footer from '../components/Footer.astro';
+import { SITE } from '../config/site';
+import '../styles/pages.css';
+
+const faqs = (await getCollection('faq')).sort((a, b) => a.data.order - b.data.order);
+const groups = [...new Set(faqs.map((f) => f.data.group))];
+const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('IIT Jodhpur');
+const jsonLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.data.q, acceptedAnswer: { '@type': 'Answer', text: f.data.a } })) };
+---
+<Base page="faq" title="FAQ & Contact" description="Answers about IGNUS '27: dates, registration, passes, travel and stay. Plus how to reach the team.">
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Help desk" sticker="s-cyan" title="Questions, answered" />
+    <div class="two-col">
+      <div class="faq-group">
+        {groups.map((g) => (
+          <>
+            <h2 class="section-title">{g}</h2>
+            {faqs.filter((f) => f.data.group === g).map((f) => (
+              <details class="faq-item"><summary>{f.data.q}</summary><p>{f.data.a}</p></details>
+            ))}
+          </>
+        ))}
+      </div>
+      <aside class="panel-ink" aria-labelledby="contact">
+        <h2 class="section-title" id="contact">Reach us</h2>
+        <ul class="contact-list">
+          <li><span class="label">Venue</span><span>{SITE.venue.name}<br>{SITE.venue.address}</span><a href={mapUrl} target="_blank" rel="noopener">Open in Maps</a></li>
+          {SITE.email ? <li><span class="label">Email</span><a href={`mailto:${SITE.email}`}>{SITE.email}</a></li> : <li><span class="label">Email</span><span>Contact details will be posted here.</span></li>}
+          <li><span class="label">Socials</span><span>{Object.entries(SITE.social).filter(([, u]) => u).map(([n, u]) => <><a href={u} target="_blank" rel="noopener">{n}</a> </>)}{Object.values(SITE.social).every((u) => !u) && 'Links coming soon.'}</span></li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+  <Footer />
+</Base>

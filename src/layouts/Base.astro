@@ -12,6 +12,7 @@ import '../styles/base.css';
 import '../styles/hud.css';
 import '../styles/ui.css';
 import Hud from '../components/Hud.astro';
+import Loader from '../components/Loader.astro';
 import { SITE } from '../config/site';
 
 interface Props {
@@ -31,7 +32,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 const og = new URL(ogImage, Astro.site);
 ---
 <!doctype html>
-<html lang="en" data-page={page}>
+<html lang="en" data-page={page} transition:animate="none">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -68,9 +69,9 @@ const og = new URL(ogImage, Astro.site);
   <div class="world-fallback" aria-hidden="true" transition:persist="world-fallback">
     <i class="poster p-ordinary"></i><i class="poster p-rift"></i><i class="poster p-shift"></i><i class="poster p-circle"></i>
   </div>
-  <div id="loader" role="status" transition:persist="loader">
-    <span class="loader-ring" aria-hidden="true"></span><span id="loaderText">Opening the rift</span>
-  </div>
+  <Loader />
+  <div id="rift-wipe" aria-hidden="true" transition:persist="rift-wipe"></div>
+  <div id="cursor" aria-hidden="true" transition:persist="cursor"><span class="ring"></span></div>
 
   <Hud />
 

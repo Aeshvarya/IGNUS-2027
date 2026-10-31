@@ -5,13 +5,21 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { PASS_VS } from '../shaders/chunks.js';
+import { createTunnelPass, createGodraysPass } from './fx.js';
 
-/** Post chain: ink outlines → bloom → tone map → grade (aberration, halftone, vignette, grain, flash). */
-export function buildPost(renderer, scene, camera, ctx) {
+/**
+ * Post chain: [god rays] → [crossing tunnel] → ink outlines → bloom → tone map →
+ * grade (portal lensing, aberration, halftone, vignette, grain, flash).
+ */
+export function buildPost(renderer, scene, camera, ctx, { runeTex }) {
   const { quality, pr } = ctx;
   const rt = new THREE.WebGLRenderTarget(innerWidth * pr, innerHeight * pr, { type: THREE.HalfFloatType, samples: quality.msaa });
   const composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
+  const godrays = quality.godrays ? createGodraysPass(quality.godrays) : null;
+  if (godrays) composer.addPass(godrays);
+  const tunnel = createTunnelPass(runeTex);
+  composer.addPass(tunnel);
 
   const inkPass = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uAmt: { value: 0 } },
@@ -37,16 +45,27 @@ void main(){
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
   const finalPass = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color(1, 1, 1) }, uAberr: { value: 0 }, uVig: { value: 0.6 }, uShift: { value: 0 }, uGrain: { value: 0.035 }, uRes: { value: new THREE.Vector2(1, 1) }, uDot: { value: 5 } },
+    uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color(1, 1, 1) }, uAberr: { value: 0 }, uVig: { value: 0.6 }, uShift: { value: 0 }, uGrain: { value: 0.035 }, uRes: { value: new THREE.Vector2(1, 1) }, uDot: { value: 5 },
+      uLens: { value: 0 }, uLensC: { value: new THREE.Vector2(0.5, 0.5) }, uLensR: { value: 0.1 } },
     vertexShader: PASS_VS,
     fragmentShader: /* glsl */`
 uniform sampler2D tDiffuse; uniform float uTime; uniform float uFlash; uniform vec3 uFlashCol; uniform float uAberr; uniform float uVig; uniform float uShift; uniform float uGrain; uniform vec2 uRes; uniform float uDot;
+uniform float uLens; uniform vec2 uLensC; uniform float uLensR;
 varying vec2 vUv;
 float h21(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 void main(){
-  vec2 d = vUv - 0.5;
+  vec2 uv = vUv;
+  // gravitational lensing: space bends in a band around the portal's rim
+  if (uLens > 0.001) {
+    vec2 asp = vec2(uRes.x / uRes.y, 1.0);
+    vec2 dp = (uv - uLensC) * asp; float r = length(dp);
+    float band = exp(-pow((r - uLensR * 1.22) / (uLensR * 0.5), 2.0));
+    float wob = 1.0 + 0.12 * sin(uTime * 2.6 + r * 38.0);
+    uv -= (dp / max(r, 1e-4)) * band * uLens * uLensR * 0.16 * wob / asp;
+  }
+  vec2 d = uv - 0.5;
   float ab = uAberr * (0.4 + dot(d, d) * 4.0);
-  vec3 col = vec3(texture2D(tDiffuse, vUv - d * ab).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv + d * ab).b);
+  vec3 col = vec3(texture2D(tDiffuse, uv - d * ab).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv + d * ab).b);
   if (uShift > 0.001) {
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
     vec2 cell = mat2(0.7071, -0.7071, 0.7071, 0.7071) * gl_FragCoord.xy / uDot;
@@ -63,5 +82,5 @@ void main(){
 }`,
   });
   composer.addPass(finalPass);
-  return { composer, inkPass, bloom, finalPass };
+  return { composer, inkPass, bloom, finalPass, tunnel, godrays };
 }

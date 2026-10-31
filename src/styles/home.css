@@ -35,8 +35,8 @@ body.is-shift .shift-logo img { animation: logo-in .7s cubic-bezier(.2, 1.6, .4,
 .rift-after .hud-line { color: var(--paper); background: var(--ink); padding: .5em .9em; border: 2px solid var(--paper); }
 .rift-after .sticker { align-self: center; font-size: var(--t-s); }
 
-.avatars { min-height: 150vh; display: flex; align-items: center; justify-content: flex-end; padding-block: 12vh; }
-.quests { min-height: 150vh; display: flex; align-items: center; justify-content: flex-start; padding-block: 12vh; }
+.avatars { min-height: 150vh; display: flex; align-items: center; justify-content: flex-end; padding-block: max(12vh, 5.5rem) 12vh; }
+.quests { min-height: 150vh; display: flex; align-items: center; justify-content: flex-start; padding-block: max(12vh, 5.5rem) 12vh; }
 
 .avatar-list { margin: 0; padding: 0; border: 0; display: grid; gap: .6rem; min-width: 0; }
 .avatar {
@@ -78,3 +78,25 @@ body.is-shift .shift-logo img { animation: logo-in .7s cubic-bezier(.2, 1.6, .4,
 .register .lede { color: var(--fg); }
 .cta-row { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: .6rem; }
 .register .foot { margin-top: auto; }
+
+/* boss encounters (pronite teaser) */
+.bosses { min-height: 110vh; display: flex; align-items: center; justify-content: center; padding-block: 6rem; }
+.bosses-inner { position: relative; width: min(100%, 64rem); display: grid; gap: 1.1rem; justify-items: center; text-align: center; }
+.bosses-inner::before { content: ""; position: absolute; inset: -12% -8%; background: radial-gradient(closest-side, var(--scrim), transparent); z-index: -1; }
+.bosses-inner .sticker { align-self: center; }
+.boss-row { list-style: none; margin: 1.2rem 0 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 760px) { .boss-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.boss {
+  position: relative; display: grid; gap: .35rem; justify-items: center; padding: 1.1rem .8rem 1.2rem; text-decoration: none; overflow: hidden;
+  background: var(--ink); border: 3px solid var(--paper); border-radius: 6px; box-shadow: 6px 6px 0 var(--accent); transition: transform .2s ease, box-shadow .2s ease;
+}
+.boss:hover, .boss:focus-visible { transform: translate(-3px, -3px) rotate(-1deg); box-shadow: 9px 9px 0 var(--accent); }
+.boss-night { font-family: var(--f-hud); font-size: var(--t-xs); letter-spacing: .2em; text-transform: uppercase; color: var(--lilac); }
+.boss-sil {
+  font-family: var(--f-paint); font-size: clamp(4rem, 3rem + 4vw, 6.5rem); line-height: 1; color: var(--ink);
+  -webkit-text-stroke: 3px var(--accent); text-shadow: 5px 5px 0 var(--portal); transition: transform .3s cubic-bezier(.2, 1.8, .4, 1);
+}
+.boss:hover .boss-sil { transform: scale(1.12) rotate(-6deg); animation: boss-glitch .4s steps(3) 2; }
+@keyframes boss-glitch { 33% { text-shadow: -5px 2px 0 var(--acid); } 66% { text-shadow: 6px -3px 0 var(--rani); } }
+.boss-name { font-family: var(--f-pop); font-size: var(--t-m); text-transform: uppercase; color: var(--paper); line-height: 1.1; }
+.boss-genre { font-family: var(--f-hud); font-size: var(--t-xs); line-height: 1.5; color: var(--lilac); }

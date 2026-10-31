@@ -11,10 +11,10 @@
  * QA override: add ?quality=ultra|high|medium|low|lite to any URL (remembered for the session).
  */
 export const TIERS = {
-  ultra: { name: 'ultra', small: false, maxDpr: 2, msaa: 4, reflection: 0.5, reflectEvery: 1, bloomScale: 1, ink: true, motes: 1300, model: '/models/tree.glb' },
-  high: { name: 'high', small: false, maxDpr: 1.5, msaa: 2, reflection: 0.38, reflectEvery: 1, bloomScale: 0.6, ink: true, motes: 1000, model: '/models/tree.glb' },
-  medium: { name: 'medium', small: true, maxDpr: 1.25, msaa: 0, reflection: 0.28, reflectEvery: 2, bloomScale: 0.5, ink: true, motes: 520, model: '/models/tree-lite.glb' },
-  low: { name: 'low', small: true, maxDpr: 1, msaa: 0, reflection: 0, reflectEvery: 0, bloomScale: 0.4, ink: false, motes: 280, model: '/models/tree-lite.glb' },
+  ultra: { name: 'ultra', small: false, maxDpr: 2, msaa: 4, reflection: 0.5, reflectEvery: 1, bloomScale: 1, ink: true, motes: 1300, godrays: 48, extras: 'full', model: '/models/tree.glb' },
+  high: { name: 'high', small: false, maxDpr: 1.5, msaa: 2, reflection: 0.38, reflectEvery: 1, bloomScale: 0.6, ink: true, motes: 1000, godrays: 28, extras: 'full', model: '/models/tree.glb' },
+  medium: { name: 'medium', small: true, maxDpr: 1.25, msaa: 0, reflection: 0.28, reflectEvery: 2, bloomScale: 0.5, ink: true, motes: 520, godrays: 0, extras: 'reduced', model: '/models/tree-lite.glb' },
+  low: { name: 'low', small: true, maxDpr: 1, msaa: 0, reflection: 0, reflectEvery: 0, bloomScale: 0.4, ink: false, motes: 280, godrays: 0, extras: 'reduced', model: '/models/tree-lite.glb' },
 };
 export const TIER_ORDER = ['lite', 'low', 'medium', 'high', 'ultra'];
 
@@ -76,5 +76,8 @@ export async function detectTier() {
 }
 
 export function qualityFor(tier) {
-  return TIERS[tier] ? { ...TIERS[tier] } : { ...TIERS.low };
+  const q = TIERS[tier] ? { ...TIERS[tier] } : { ...TIERS.low };
+  // QA / poster rendering: ?governor=off keeps quality fixed even when frames are slow.
+  try { q.governor = new URLSearchParams(location.search).get('governor') !== 'off'; } catch (e) { q.governor = true; }
+  return q;
 }

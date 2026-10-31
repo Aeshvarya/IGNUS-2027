@@ -1,0 +1,53 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Footer from '../components/Footer.astro';
+import { CATEGORIES, CATEGORY_STYLE } from '../config/site';
+import { DAYS, dayLabel, dayTimeISO } from '../lib/dates';
+import '../styles/pages.css';
+
+const events = await getCollection('events');
+const pronites = await getCollection('pronites');
+type Slot = { start: string; end?: string; title: string; sub: string; href: string; color: string; pronite?: boolean };
+const byDay = DAYS.map((d) => {
+  const slots: Slot[] = events.filter((e) => e.data.day === d).map((e) => ({
+    start: e.data.start, end: e.data.end, title: e.data.title, sub: `${CATEGORIES[e.data.category].label} · ${e.data.venue}`,
+    href: `/events/${e.id}/`, color: CATEGORY_STYLE[e.data.category][1],
+  }));
+  for (const p of pronites.filter((p) => p.data.night === d)) {
+    slots.push({ start: p.data.start, title: `Pronite: ${p.data.artist ?? p.data.title}`, sub: `${p.data.genre} · ${p.data.venue}`, href: '/pronites/', color: 'var(--acid)', pronite: true });
+  }
+  return { day: d, slots: slots.sort((a, b) => a.start.localeCompare(b.start)) };
+});
+---
+<Base page="schedule" title="Schedule" description="The IGNUS '27 schedule: every event and pronite across four days, hour by hour.">
+  <div class="page-scrim" aria-hidden="true"></div>
+  <div class="page">
+    <PageHero kicker="Four-day timeline" sticker="s-cyan" title="The storyline" lede="Hour by hour, venue by venue. During the fest, what is on right now lights up." />
+
+    <div class="day-tabs" role="tablist" aria-label="Fest day">
+      {DAYS.map((d) => (
+        <button class="day-tab" role="tab" type="button" id={`tab-${d}`} aria-controls={`day-${d}`} aria-selected={d === 1 ? 'true' : 'false'} tabindex={d === 1 ? 0 : -1} data-day-tab={d}>
+          <b>Day {d}</b><small>{dayLabel(d)}</small>
+        </button>
+      ))}
+    </div>
+
+    {byDay.map(({ day, slots }) => (
+      <section class="panel-ink" role="tabpanel" id={`day-${day}`} aria-labelledby={`tab-${day}`} hidden={day !== 1} data-day-panel={day}>
+        <h2 class="sr-only">Day {day}, {dayLabel(day)}</h2>
+        <ol class="timeline">
+          {slots.map((s) => (
+            <li class:list={['slot', s.pronite && 'is-pronite']} style={`--cat:${s.color}`} data-start={dayTimeISO(day, s.start)} data-end={s.end ? dayTimeISO(day, s.end) : ''}>
+              <span class="slot-time"><time datetime={dayTimeISO(day, s.start)}>{s.start}</time>{s.end && <small>to {s.end}</small>}</span>
+              <span class="slot-dot" aria-hidden="true"></span>
+              <div class="slot-body"><a href={s.href}><h3>{s.title}<span class="now-tag">Live</span></h3></a><p>{s.sub}</p></div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+  <Footer />
+</Base>

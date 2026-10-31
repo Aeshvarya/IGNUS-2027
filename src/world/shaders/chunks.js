@@ -11,6 +11,7 @@ float fbm(vec2 p){ float v = 0.0; float a = 0.5; mat2 m = mat2(1.6, 1.2, -1.2, 1
 /** The magic circle drawn on the ground (and in the water) after the Shift. */
 export const MAGIC = /* glsl */`
 uniform vec3 uAccent; uniform vec3 uPink; uniform vec3 uCyan; uniform vec3 uAcid; uniform float uTime;
+uniform vec2 uWave; uniform vec3 uWaveCol;
 float ringLine(float r, float R, float w){ return 1.0 - smoothstep(0.0, w, abs(r - R)); }
 vec3 magicCircle(vec3 wp){
   vec2 p = wp.xz - vec2(0.0, -20.0);
@@ -38,6 +39,8 @@ vec3 magicCircle(vec3 wp){
   col += uAcid * ringLine(r, 36.5, max(0.05, fw)) * 0.9;
   col += uPink * (ringLine(r, 42.0, 1.8) * (0.5 + 0.25 * sin(uTime * 1.6)) + ringLine(r, 42.0, max(0.14, fw)) * 2.5);
   col += uPink * ringLine(r, 46.0, max(0.04, fw)) * 0.6;
+  // paint wave: a ring of the newly chosen colour sweeping outward from the tree
+  if (uWave.y > 0.0) col += uWaveCol * (ringLine(r, uWave.x, 2.2) * 1.4 + ringLine(r, uWave.x, max(0.25, fw)) * 3.0) * uWave.y;
   return col;
 }
 `;

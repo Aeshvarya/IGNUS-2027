@@ -1,0 +1,52 @@
+---
+/**
+ * The loader: a magic circle that draws itself as the world loads (--p: 0 → 1, set by the
+ * runtime from real download progress), then irises open into the page. Persisted across
+ * navigations; after the first load it stays hidden.
+ */
+const glyphs = 'अ इ ग न स भ व त र ई ज क प ल य ह'.split(' ');
+const R = 70;
+---
+<div id="loader" role="status" aria-live="polite" transition:persist="loader" style="--p:0">
+  <svg class="lc" viewBox="0 0 200 200" aria-hidden="true">
+    <defs>
+      <path id="lc-rune-path" d={`M100,100 m-${R + 12},0 a${R + 12},${R + 12} 0 1,1 ${(R + 12) * 2},0 a${R + 12},${R + 12} 0 1,1 -${(R + 12) * 2},0`} />
+    </defs>
+    <circle class="lc-track" cx="100" cy="100" r="92" />
+    <circle class="lc-prog" cx="100" cy="100" r="92" pathLength="1" />
+    <circle class="lc-dash" cx="100" cy="100" r={R} />
+    <g class="lc-star">
+      <polygon points="100,38 154,131 46,131" />
+      <polygon points="100,162 46,69 154,69" />
+    </g>
+    <circle class="lc-core" cx="100" cy="100" r="16" />
+    <text class="lc-runes"><textPath href="#lc-rune-path">{glyphs.join('  ')}  {glyphs.join('  ')}</textPath></text>
+  </svg>
+  <span id="loaderText">Opening the rift</span>
+</div>
+
+<style is:global>
+  @property --hole { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  #loader {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; align-content: center; gap: 1.4rem; background: var(--void);
+    font-family: var(--f-hud); font-size: var(--t-xs); letter-spacing: .3em; text-transform: uppercase; color: var(--portal);
+    --hole: 0px;
+    -webkit-mask: radial-gradient(circle at 50% 46%, transparent var(--hole), #000 calc(var(--hole) + 2px));
+    mask: radial-gradient(circle at 50% 46%, transparent var(--hole), #000 calc(var(--hole) + 2px));
+    transition: --hole 1.1s cubic-bezier(.7, 0, .2, 1), visibility 0s linear 1.1s;
+  }
+  #loader.done { --hole: 150vmax; visibility: hidden; pointer-events: none; }
+  .lc { width: min(46vmin, 260px); height: auto; overflow: visible; }
+  .lc circle, .lc polygon { fill: none; }
+  .lc-track { stroke: var(--line); stroke-width: 1; }
+  .lc-prog { stroke: var(--portal); stroke-width: 2.5; stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--p)); transform: rotate(-90deg); transform-origin: 100px 100px; transition: stroke-dashoffset .4s ease; filter: drop-shadow(0 0 6px var(--portal)); }
+  .lc-dash { stroke: var(--rani); stroke-width: 1.2; stroke-dasharray: 3 7; opacity: calc(.25 + .75 * var(--p)); animation: lc-spin 9s linear infinite reverse; transform-origin: 100px 100px; }
+  .lc-star polygon { stroke: var(--lichen); stroke-width: 1; stroke-dasharray: 330; stroke-dashoffset: calc(330 * (1 - min(1, var(--p) * 1.4))); opacity: .85; transition: stroke-dashoffset .5s ease; }
+  .lc-star { animation: lc-spin 24s linear infinite; transform-origin: 100px 100px; }
+  .lc-core { fill: var(--portal) !important; opacity: calc(.15 + .85 * var(--p)); filter: blur(4px); animation: lc-pulse 1.6s ease-in-out infinite; transform-origin: 100px 100px; }
+  .lc-runes { font-family: var(--f-carved); font-size: 9px; letter-spacing: 0; fill: var(--copper); opacity: calc(.3 + .7 * var(--p)); }
+  .lc-runes, .lc text { animation: lc-spin 30s linear infinite; transform-origin: 100px 100px; }
+  @keyframes lc-spin { to { transform: rotate(360deg); } }
+  @keyframes lc-pulse { 50% { transform: scale(1.25); } }
+  @media (prefers-reduced-motion: reduce) { #loader { transition: opacity .3s, visibility 0s linear .3s; } #loader.done { opacity: 0; } }
+</style>
