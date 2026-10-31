@@ -56,7 +56,8 @@
   color: var(--paper); background: transparent;
 }
 .pause::backdrop { background: rgba(13, 6, 24, .82); backdrop-filter: blur(6px); }
-.pause[open] { display: grid; }
+.pause[open] { display: grid; overflow-y: auto; overscroll-behavior: contain; padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px)); }
+@media (max-height: 640px) { .pause-list a { padding-block: .4rem; } .pause-list b { font-size: var(--t-m); } .pause-inner { gap: 1rem; } }
 .pause-inner {
   position: relative; width: min(100% - 32px, 40rem); margin: auto; padding: clamp(1.4rem, 4vw, 2.4rem);
   display: grid; gap: 1.4rem; background: var(--ink); border: 3px solid var(--paper); border-radius: 6px; box-shadow: 10px 10px 0 var(--accent);

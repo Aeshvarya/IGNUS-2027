@@ -56,6 +56,8 @@ export function mountHome(app) {
       }
       lastShift = s;
     }
+    const scene = u < 2 ? 'ordinary' : u < 3 ? 'rift' : u < 5.5 ? 'shift' : 'circle';
+    if (body.dataset.scene !== scene) body.dataset.scene = scene; // Lite mode posters follow the story
     hudBar.style.transform = `scaleX(${(u / 6).toFixed(4)})`;
     hudBox.classList.toggle('is-hidden', u > 3.55 && u < 5.6);
     const line = s ? `Lvl 27 · ${avatarName() || 'New player'}` : `Rift ${dist.toFixed(1)} m`;

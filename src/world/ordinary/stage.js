@@ -97,7 +97,11 @@ void main(){
   return { waterFlatMat: flatMat, waterFallMat: fallMat };
 }
 
-/** The wet, reflecting plaza. On low tiers the Reflector is replaced by a cheap fake. */
+/**
+ * The wet, reflecting plaza. On the low tier the Reflector (which re-renders the whole scene)
+ * is replaced by a fake: sky gradient plus a glow streak where the portal and rivulet would reflect.
+ * Returns { pool, reflect } where reflect.set(n) renders the mirror every n-th frame (0 = freeze).
+ */
 export function buildPool(ctx) {
   const { U, scene, quality } = ctx;
   const REFL = quality.reflection;
@@ -107,6 +111,7 @@ export function buildPool(ctx) {
       color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null },
       uShift: { value: 0 }, uTint: { value: new THREE.Color(0.9, 0.85, 0.8) }, uStone: { value: new THREE.Color(0.06, 0.05, 0.045) },
       uAccent: { value: new THREE.Color() }, uPink: { value: new THREE.Color(HEX.rani) }, uCyan: { value: new THREE.Color(HEX.cyan) }, uAcid: { value: new THREE.Color(HEX.acid) }, uTime: { value: 0 },
+      uSkyLo: { value: new THREE.Color(1.0, 0.5, 0.2) }, uSkyHi: { value: new THREE.Color(0.08, 0.07, 0.08) }, uGlowC: { value: new THREE.Color(0.2, 0.8, 1.0) },
     },
     vertexShader: /* glsl */`
 uniform mat4 textureMatrix; varying vec4 vUvR; varying vec3 vWPos;
@@ -117,6 +122,7 @@ void main(){ vUvR = textureMatrix * vec4(position, 1.0); vec4 wp = modelMatrix *
 }`,
     fragmentShader: /* glsl */`
 uniform vec3 color; uniform sampler2D tDiffuse; uniform float uShift; uniform vec3 uTint; uniform vec3 uStone;
+uniform vec3 uSkyLo; uniform vec3 uSkyHi; uniform vec3 uGlowC;
 varying vec4 vUvR; varying vec3 vWPos;
 #include <fog_pars_fragment>
 ${NOISE}
@@ -139,16 +145,40 @@ void main(){
   #include <fog_fragment>
 }`,
   };
-  const pool = new Reflector(new THREE.PlaneGeometry(84, 54), {
-    textureWidth: Math.round(innerWidth * ctx.pr * REFL), textureHeight: Math.round(innerHeight * ctx.pr * REFL),
-    clipBias: 0.003, color: 0xffffff, multisample: 0, shader: POOL_SHADER,
-  });
+  let pool;
+  const reflect = { every: REFL > 0 ? quality.reflectEvery : 0, set(n) { this.every = n; } };
+  if (REFL > 0) {
+    pool = new Reflector(new THREE.PlaneGeometry(84, 54), {
+      textureWidth: Math.round(innerWidth * ctx.pr * REFL), textureHeight: Math.round(innerHeight * ctx.pr * REFL),
+      clipBias: 0.003, color: 0xffffff, multisample: 0, shader: POOL_SHADER,
+    });
+    // Throttle the mirror pass: render it every n-th frame, or freeze it (n = 0).
+    const renderMirror = pool.onBeforeRender;
+    let frame = 0, primed = false;
+    pool.onBeforeRender = function (...args) {
+      frame++;
+      if (!primed || (reflect.every > 0 && frame % reflect.every === 0)) { primed = true; renderMirror.apply(this, args); }
+    };
+    Object.assign(pool.material.uniforms, THREE.UniformsUtils.clone(THREE.UniformsLib.fog));
+  } else {
+    const FAKE = `
+  float zf = smoothstep(46.0, -8.0, p.y);
+  vec3 refl = mix(uSkyHi, uSkyLo, zf * zf);
+  refl += uGlowC * exp(-abs(p.x + rip * 0.8) / 2.2) * (0.55 + 1.6 * max(streak, 0.0)) * (0.4 + 0.6 * zf);
+  refl *= 0.85 + rip * 0.5;`;
+    const frag = POOL_SHADER.fragmentShader.replace('vec3 refl = texture2DProj(tDiffuse, uvr).rgb;', FAKE);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, POOL_SHADER.uniforms, { textureMatrix: { value: new THREE.Matrix4() } }]),
+      vertexShader: POOL_SHADER.vertexShader, fragmentShader: frag, fog: true,
+    });
+    pool = new THREE.Mesh(new THREE.PlaneGeometry(84, 54), mat);
+    pool.getRenderTarget = () => ({ setSize() {} });
+  }
   pool.rotation.x = -Math.PI / 2; pool.position.set(0, 0.02, 19);
-  Object.assign(pool.material.uniforms, THREE.UniformsUtils.clone(THREE.UniformsLib.fog));
   pool.material.fog = true;
   pool.material.uniforms.uTime = U.time; pool.material.uniforms.uAccent = U.accent;
   scene.add(pool);
-  return pool;
+  return { pool, reflect };
 }
 
 /** The ground: paving in the ordinary realm, a neon grid with the magic circle after the Shift. */

@@ -35,6 +35,11 @@ export const SITE = {
   email: '',
 } as const;
 
+/** Feature switches. posters: Lite-mode stills exist in public/posters/ (scripts/render-posters.mjs). */
+export const FEATURES = {
+  posters: false,
+} as const;
+
 export type NavItem = { href: string; label: string; short?: string };
 
 /** Primary nav (top HUD). The pause menu lists everything. */

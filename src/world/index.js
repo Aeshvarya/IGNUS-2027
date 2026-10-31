@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clamp, smooth } from './core/util.js';
 import { createContext, LAMPS, PORTAL, ZF, SUN } from './core/context.js';
 import { createMaterials, buildPlinth, buildRivulet, buildPool, buildGround } from './ordinary/stage.js';
@@ -11,21 +12,23 @@ import { buildShiftLayer } from './shift/layer.js';
 import { buildPost } from './core/post.js';
 import { sampleStory } from './core/camera.js';
 
-const MODEL_URL = '/models/knowledge-tree.glb';
-
 /**
  * Builds the IGNUS world into `canvas`.
  * @param {{ canvas: HTMLCanvasElement, quality: object, reduceMotion: boolean, onProgress?: (f:number)=>void }} opts
- * @returns world API: update(u, dt, t), resize(), dist(), setAccent(hex), highlight(i), setPointer(x, y)
+ * @returns world API: update(u, dt, t, measure), resize(), dist(), setAccent(hex), highlight(i), stats()
  */
 export async function createWorld({ canvas, quality, reduceMotion, onProgress }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   if (!renderer.capabilities.isWebGL2) throw new Error('WebGL2 required');
-  let pr = Math.min(window.devicePixelRatio || 1, quality.maxDpr);
+  // Pixel ratio: the tier's cap, and never more than ~3.7 MP of render target (big retina screens).
+  const targetPr = () => Math.min(window.devicePixelRatio || 1, quality.maxDpr, Math.sqrt(3.7e6 / (innerWidth * innerHeight)));
+  const minPr = quality.small ? 0.6 : 0.75;
+  let pr = Math.max(minPr, targetPr());
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
+  renderer.info.autoReset = false; // count every pass of a frame (reset in update)
 
   const scene = new THREE.Scene();
   const fog = new THREE.FogExp2(0x4a3324, 0.0085);
@@ -39,7 +42,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   const mats = createMaterials(ctx);
   buildPlinth(ctx, mats);
   const { waterFlatMat, waterFallMat } = buildRivulet(ctx);
-  const pool = buildPool(ctx);
+  const { pool, reflect } = buildPool(ctx);
   buildGround(ctx, mats);
   const tree = createTree(ctx);
   const { discMat, rimMat, haloMat, inflowMat } = buildPortal(ctx);
@@ -61,6 +64,11 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   scene.add(neonL, neonR);
 
   const { composer, inkPass, bloom, finalPass } = buildPost(renderer, scene, camera, ctx);
+  inkPass.enabled = quality.ink;
+  { // bloom at a fraction of full resolution on lighter tiers
+    const setBloomSize = bloom.setSize.bind(bloom);
+    bloom.setSize = (w, h) => setBloomSize(Math.max(2, Math.round(w * quality.bloomScale)), Math.max(2, Math.round(h * quality.bloomScale)));
+  }
 
   /* ---------- palettes for each realm ---------- */
   let realm = false;
@@ -74,6 +82,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
       pLight.color.set(0x55ddff); stepLight.color.set(0x3fd8ff);
       for (const m of [waterFlatMat, waterFallMat]) { m.uniforms.uDeep.value.setRGB(0.004, 0.03, 0.045); m.uniforms.uMid.value.setRGB(0.02, 0.12, 0.16); m.uniforms.uHi.value.setRGB(0.5, 1.4, 1.6); m.uniforms.uGlow.value.setRGB(0.08, 0.5, 0.7); }
       pu.uTint.value.setRGB(0.92, 0.86, 0.8); pu.uStone.value.setRGB(0.06, 0.05, 0.045);
+      pu.uSkyLo.value.setRGB(1.0, 0.5, 0.2); pu.uSkyHi.value.setRGB(0.08, 0.07, 0.08); pu.uGlowC.value.setRGB(0.2, 0.8, 1.0);
       rays.forEach((r) => { r.mat.uniforms.uColor.value.setRGB(1.0, 0.82, 0.55); r.mat.uniforms.uInt.value = 0.03; });
       LAMPS.forEach((l, i) => lampHeads.setColorAt(i, lampWarm));
       lampLights.forEach((l) => l.color.set(0xffb36b));
@@ -84,6 +93,7 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
       pLight.color.copy(acc); stepLight.color.set(0x5ef2ff);
       for (const m of [waterFlatMat, waterFallMat]) { m.uniforms.uDeep.value.setRGB(0.03, 0.0, 0.08); m.uniforms.uMid.value.copy(acc).multiplyScalar(0.22); m.uniforms.uHi.value.setRGB(0.6, 2.0, 2.2); m.uniforms.uGlow.value.copy(acc).multiplyScalar(0.6); }
       pu.uTint.value.setRGB(0.85, 0.8, 1.0); pu.uStone.value.setRGB(0.03, 0.01, 0.06);
+      pu.uSkyLo.value.setRGB(0.36, 0.03, 0.26); pu.uSkyHi.value.setRGB(0.02, 0.0, 0.05); pu.uGlowC.value.copy(acc).multiplyScalar(0.8);
       rays.forEach((r, i) => { r.mat.uniforms.uColor.value.copy(PAL[i % PAL.length]); r.mat.uniforms.uInt.value = 0.32; });
       LAMPS.forEach((l, i) => lampHeads.setColorAt(i, tmpC.copy(PAL[(i + 1) % PAL.length]).multiplyScalar(2.6)));
       lampLights.forEach((l, i) => l.color.copy(PAL[(i + 1) % PAL.length]));
@@ -111,11 +121,12 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
 
   /* ---------- sizing ---------- */
   let baseFov = 48;
-  function resize() {
+  function resize(fromWindow = false) {
     const w = innerWidth, h = innerHeight;
+    if (fromWindow) pr = Math.max(minPr, Math.min(pr, targetPr()));
     renderer.setPixelRatio(pr); renderer.setSize(w, h, false);
     composer.setPixelRatio(pr); composer.setSize(w, h);
-    pool.getRenderTarget().setSize(Math.max(64, Math.round(w * pr * quality.reflection)), Math.max(64, Math.round(h * pr * quality.reflection)));
+    if (quality.reflection > 0) pool.getRenderTarget().setSize(Math.max(64, Math.round(w * pr * quality.reflection)), Math.max(64, Math.round(h * pr * quality.reflection)));
     camera.aspect = w / h;
     baseFov = clamp(2 * Math.atan(Math.tan(27 * Math.PI / 180) / camera.aspect) * 180 / Math.PI, 48, 78);
     inkPass.uniforms.uRes.value.set(w * pr, h * pr); finalPass.uniforms.uRes.value.set(w * pr, h * pr); finalPass.uniforms.uDot.value = 4.5 * pr;
@@ -124,10 +135,10 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   resize();
 
   /* ---------- load the knowledge tree ---------- */
-  const gltfLoader = new GLTFLoader();
+  const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const report = (e) => { if (onProgress && e.total) onProgress(e.loaded / e.total); };
   const gltf = await new Promise((resolve) => {
-    gltfLoader.load(MODEL_URL, resolve, report, (err) => { console.warn('The knowledge tree could not be loaded from ' + MODEL_URL, err); resolve(null); });
+    gltfLoader.load(quality.model, resolve, report, (err) => { console.warn('The knowledge tree could not be loaded from ' + quality.model, err); resolve(null); });
   });
   if (gltf) tree.attach(gltf);
 
@@ -144,7 +155,22 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
   const cyanWhite = new THREE.Color(0.85, 1, 1), pinkWhite = new THREE.Color(1, 0.88, 0.96);
   const tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler();
 
-  function update(u, dt, t) {
+  /*
+   * Runtime governor: if frames run long (over ~28 ms on average for 2.5 s), step quality down
+   * one notch at a time. It never steps back up within a visit, to avoid visible flicker.
+   */
+  const degraded = [];
+  function degrade() {
+    if (pr > minPr + 1e-3) { pr = Math.max(minPr, pr - 0.2); resize(); return 'dpr ' + pr.toFixed(2); }
+    if (reflect.every === 1) { reflect.set(2); return 'mirror/2'; }
+    if (reflect.every === 2) { reflect.set(4); return 'mirror/4'; }
+    if (bloom.enabled) { bloom.enabled = false; return 'bloom off'; }
+    if (inkPass.enabled) { inkPass.enabled = false; return 'ink off'; }
+    return null;
+  }
+
+  function update(u, dt, t, measure = true) {
+    renderer.info.reset();
     U.time.value = t;
     const s = u >= 3;
     if (s !== realm) { setRealm(s); if (!first) { kick = 1; if (s) burstStart = t; } }
@@ -191,13 +217,18 @@ export async function createWorld({ canvas, quality, reduceMotion, onProgress })
 
     composer.render();
 
-    // Adaptive resolution: if frames run long, drop the pixel ratio.
+    if (!measure) { fpsAcc = 0; fpsN = 0; return; }
     fpsAcc += dt; fpsN++;
-    if (fpsAcc > 2.5) { if (fpsAcc / fpsN > 0.028 && pr > 0.75) { pr = Math.max(0.75, pr - 0.2); resize(); } fpsAcc = 0; fpsN = 0; }
+    if (fpsAcc > 2.5) {
+      if (fpsAcc / fpsN > 0.028) { const step = degrade(); if (step) degraded.push(step); }
+      fpsAcc = 0; fpsN = 0;
+    }
   }
 
   return {
-    update, resize,
+    update,
+    resize: () => resize(true),
+    stats: () => ({ tier: quality.name, pr: +pr.toFixed(2), mirrorEvery: reflect.every, bloom: bloom.enabled, ink: inkPass.enabled, degraded: [...degraded], calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
     dist: () => camera.position.distanceTo(PORTAL),
     setAccent(hex) { U.accent.value.set(hex); applyPalette(); },
     highlight(i) { hlTarget = i; },

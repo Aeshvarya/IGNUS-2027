@@ -62,10 +62,12 @@ const og = new URL(ogImage, Astro.site);
   </script>
   <ClientRouter />
 </head>
-<body class:list={[realm === 'shift' && 'is-shift']} data-page={page} data-realm={realm}>
+<body class:list={[realm === 'shift' && 'is-shift']} data-page={page} data-realm={realm} data-scene={realm === 'shift' ? 'shift' : 'ordinary'}>
   <a class="skip" href="#content">Skip to content</a>
   <canvas id="world" aria-hidden="true" transition:persist="world"></canvas>
-  <div class="world-fallback" aria-hidden="true" transition:persist="world-fallback"></div>
+  <div class="world-fallback" aria-hidden="true" transition:persist="world-fallback">
+    <i class="poster p-ordinary"></i><i class="poster p-rift"></i><i class="poster p-shift"></i><i class="poster p-circle"></i>
+  </div>
   <div id="loader" role="status" transition:persist="loader">
     <span class="loader-ring" aria-hidden="true"></span><span id="loaderText">Opening the rift</span>
   </div>

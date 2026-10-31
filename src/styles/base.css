@@ -38,6 +38,8 @@ button { font: inherit; color: inherit; }
 #world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
 .world-fallback { display: none; }
 .no-webgl #world { display: none; }
+/* Lite mode: pre-rendered stills of the world (scripts/render-posters.mjs), one per scene.
+   Only the active layer is display:block, so only that image downloads. */
 .no-webgl .world-fallback {
   display: block; position: fixed; inset: 0; z-index: 0;
   background:
@@ -49,6 +51,22 @@ body.is-shift.no-webgl .world-fallback {
     radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--accent) 40%, transparent), transparent 60%),
     radial-gradient(ellipse at 50% 0%, #3a0f3c, var(--ink) 70%);
 }
+.world-fallback .poster { display: none; position: absolute; inset: 0; background: center / cover no-repeat; animation: poster-in .8s ease both; }
+@keyframes poster-in { from { opacity: 0; } to { opacity: 1; } }
+.p-ordinary { background-image: url(/posters/ordinary-wide.webp); }
+.p-rift { background-image: url(/posters/rift-wide.webp); }
+.p-shift { background-image: url(/posters/shift-wide.webp); }
+.p-circle { background-image: url(/posters/circle-wide.webp); }
+@media (max-aspect-ratio: 1/1) {
+  .p-ordinary { background-image: url(/posters/ordinary-tall.webp); }
+  .p-rift { background-image: url(/posters/rift-tall.webp); }
+  .p-shift { background-image: url(/posters/shift-tall.webp); }
+  .p-circle { background-image: url(/posters/circle-tall.webp); }
+}
+.has-posters body[data-scene="ordinary"] .p-ordinary,
+.has-posters body[data-scene="rift"] .p-rift,
+.has-posters body[data-scene="shift"] .p-shift,
+.has-posters body[data-scene="circle"] .p-circle { display: block; }
 
 main { position: relative; z-index: 1; overflow-x: clip; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 section { position: relative; box-sizing: border-box; }
